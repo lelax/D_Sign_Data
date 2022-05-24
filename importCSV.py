@@ -9,6 +9,7 @@ with open("../D_Sign_Data/import/relational_publications.csv", "r", encoding="ut
     for row in data:
         print(row)
 
+#Function to check if there are vowels inside the data
 def check(data):
     for i in data:
         if i in 'aeiou':
