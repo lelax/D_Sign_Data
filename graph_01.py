@@ -1,7 +1,7 @@
 from sys import orig_argv
 from rdflib import Graph
 
-from Classes import Organization, Publication, Venue
+from impl import Organization, Publication, Venue
 
 my_graph = Graph()
 
@@ -31,6 +31,7 @@ name = URIRef("https://schema.org/name")
 # relations among classes
 publicationVenue = URIRef("https://schema.org/isPartOf")
 
+import pandas as pd
 from rdflib import Literal
 
 a_string = Literal("a string")

@@ -1,6 +1,12 @@
+import pandas as pd
+import sqlite3
+
+
 from sqlite3 import connect
 from pandas import read_csv, Series, read_sql
 from csv import reader
+from pandasql importsqldf
+
 
 
 class IdentifiableEntity(object):
@@ -201,16 +207,60 @@ class GenericQueryProcessor(object):
             return df_query
 
     def getPublicationsByAuthorId (self, author):
+        
         query = "SELECT publication FROM Publication WHERE AuthorID== author"
         df_query = read_sql(query, con)
+        
         return df_query
 
-    def getMostCitedPublication (self, Cited):
+class RelationalQueryProcessor(object):
+      
+    def getPublicationsPublishedInYear(self, Year):
+        query = """SELECT publicationYear 
+                 FROM Publication WHERE 
+                 publicationYear == year"""
 
-    def getMostCitedVenue (self):
+        pysqldf(query)
 
-    def getVenuesByPublisherId (self):
+    def getPublicationsByAuthorId(self, Id):
+        query = """SELECT publication 
+                 FROM Publications 
+                 WHERE authorId == Id"""
+        pysqldf(query)
 
-    def getPublicationInVenue (self):
+    def getMostCitedPublication(self):
+        query = """SELECT TOP 1 Title
+                   FROM Publication
+                   GROUP BY Title
+                   ORDER BY COUNT(Title) DESC"""
+        pysqldf(query)
 
-    def 
+    def getMostCitedVenue(self):
+        query = """SELECT TOP 1 Title
+                   FROM Venue
+                   GROUP BY Title
+                   ORDER BY COUNT(Title) DESC"""
+
+    def getVenuesByPublisherId(self, id):
+        query = """SELECT Title
+                   FROM Venue
+                   WHERE """
+
+    def getPublicationInVenue(self):
+
+    def getJournalArticlesInIssue(self):
+        query = """SELECT * 
+                   FROM JournalArticle
+                   WHERE issue"""
+
+    def getJournalArticlesInVolume (self):
+    
+    def getJournalArticlesInJournal (self):
+
+    def getProceedingsByEvent (self):
+
+    def getPublicationAuthors (self):
+
+    def getPublicationsByAuthorName(self):
+    
+    def getDistinctPublishersOfPublications(self):
