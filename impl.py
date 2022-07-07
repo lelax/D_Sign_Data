@@ -5,7 +5,7 @@ import sqlite3
 from sqlite3 import connect
 from pandas import read_csv, Series, read_sql
 from csv import reader
-from pandasql importsqldf
+from pandasql import sqldf
 
 
 
@@ -42,10 +42,10 @@ class IdentifiableEntity(object):
 
 
 class Person(IdentifiableEntity):
-    def __init__(self, givenName, familyName):
+    def __init__(self, identifiers, givenName, familyName):
         self.givenName = givenName
         self.familyName = familyName
-        fullname = set(familyName + givenName)
+        self.fullname = set(self.familyName + self.givenName)
         for name in fullname:
             AuthorId =+ 1 #Figure out a way to keep track of the authors ID
 
@@ -55,6 +55,9 @@ class Person(IdentifiableEntity):
 
     def getFamilyName(self):
         return self.familyName
+
+    def getfullname(self):
+        return self.fullname
 
 
 class Publication(IdentifiableEntity):
@@ -77,8 +80,8 @@ class Publication(IdentifiableEntity):
     # not sure about this
     def getCitedPublications(self):
         self.id = set()
-        for publicatio in Publication:
-            self.id.add(publicatio)
+        for p in Publication:
+            self.id.add(p)
 
     # missing def getAuthors(self):
     # expected set[Person]
@@ -151,12 +154,15 @@ class Organization(IdentifiableEntity):
 class RelationalDataProcessor(object):
 
     def __init__(self):
-        self.Data = None
+            self.uploadData = uploadData
 
-    def uploadData(self, Data):
-        self.Data = Data
-        with open(self.Data, "r", encoding="utf-8") as f:
-            Data = reader(f)
+        def read(self, Data):
+            if ".json" in Data:
+                readjson = read_json(Data)
+                print(pd.DataFrame(readjson))
+            else:
+                readcsv = read_csv(Data)
+                print(pd.DataFrame(readcsv))
 
 
 class RelationalProcessor(object):
@@ -173,52 +179,16 @@ class RelationalProcessor(object):
             con.commit()
 
 
-class GenericQueryProcessor(object):
-
-    with connect ("publications.db") as con:
-            con.commit()
-    
-    with connect ("venue.db") as con:
-            con.commit()
-
-    with connect ("journalarticle.db") as con:
-            con.commit()
-
-    with connect ("proceedings.db") as con:
-            con.commit()
-
-    with connect ("organization.db") as con:
-            con.commit()
-
-    def __init__(self, queryProcessor):
-        self.queryProcessor = list()
-
-
-    def cleanQueryProcessors(self):
-        self.queryProcessor = self.queryProcessor.clear()
-
-
-    def addQueryProcessor(self):
-        self.queryProcessor.add(self)
-
-    def getPublicationsPublishedInYear(self, year):
-            query = "SELECT publicationYear FROM Publication WHERE publicationYear == year"
-            df_query = read_sql(query, con)
-            return df_query
-
-    def getPublicationsByAuthorId (self, author):
-        
-        query = "SELECT publication FROM Publication WHERE AuthorID== author"
-        df_query = read_sql(query, con)
-        
-        return df_query
-
 class RelationalQueryProcessor(object):
+
+    def __init__(self):
+        self.RelationalQueryProcessor = RelationalQueryProcessor
+
       
     def getPublicationsPublishedInYear(self, Year):
         query = """SELECT publicationYear 
                  FROM Publication WHERE 
-                 publicationYear == year"""
+                 publicationYear == Year"""
 
         pysqldf(query)
 
@@ -226,7 +196,7 @@ class RelationalQueryProcessor(object):
         query = """SELECT publication 
                  FROM Publications 
                  WHERE authorId == Id"""
-        pysqldf(query)
+        pysqldf(query, connect())
 
     def getMostCitedPublication(self):
         query = """SELECT TOP 1 Title
@@ -242,11 +212,14 @@ class RelationalQueryProcessor(object):
                    ORDER BY COUNT(Title) DESC"""
 
     def getVenuesByPublisherId(self, id):
-        query = """SELECT Title
+        query = """SELECT *
                    FROM Venue
-                   WHERE """
+                   WHERE VenueId == OrganizationId"""
 
     def getPublicationInVenue(self):
+        query = """SELECT *
+                   FROM Publication
+                   WHERE PublicationId == VenueId"""
 
     def getJournalArticlesInIssue(self):
         query = """SELECT * 
@@ -264,3 +237,16 @@ class RelationalQueryProcessor(object):
     def getPublicationsByAuthorName(self):
     
     def getDistinctPublishersOfPublications(self):
+
+
+
+class GenericQueryProcessor(RelationalQueryProcessor):
+
+            def __init__(self, queryProcessor):
+                self.queryProcessor = list()
+
+            def cleanQueryProcessors(self):
+                self.queryProcessor = self.queryProcessor.clear()
+
+            def addQueryProcessor(self):
+                self.queryProcessor.add(self)
