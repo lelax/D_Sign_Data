@@ -11,10 +11,10 @@ from rdflib import URIRef
 Person = URIRef("https://schema.org/Person")
 JournalArticle = URIRef("https://schema.org/ScholarlyArticle")
 BookChapter = URIRef("https://schema.org/Chapter")
-ProceedingsPaper = URIRef("https://schema.org/ScholarlyArticle")
+ProceedingsPaper = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/ProceedingsPaper")
 Journal = URIRef("https://schema.org/Periodical")
 Book = URIRef("https://schema.org/Book")
-Proceedings = URIRef("https://schema.org/Legislation")
+Proceedings = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/Proceedings")
 
 
 # attributes related to classes
