@@ -10,9 +10,9 @@ from pandasql import sqldf
 
 
 class IdentifiableEntity(object):
-    def __init__(self, identifiers):
+    def __init__(self, id):
         self.id = set()
-        for identifier in identifiers:
+        for identifier in id:
             self.id.add(identifier)
 
     # methods of identifiableEntity
@@ -24,10 +24,10 @@ class IdentifiableEntity(object):
         result.sort()
         return result
 
-    def addId(self, identifier):
+    def addId(self, id):
         result = True
-        if identifier not in self.id:
-            self.id.add(identifier)
+        if id not in self.id:
+            self.id.add(id)
         else:
             result = False
         return result
@@ -42,12 +42,15 @@ class IdentifiableEntity(object):
 
 
 class Person(IdentifiableEntity):
-    def __init__(self, identifiers, givenName, familyName):
+    def __init__(self, id, givenName, familyName):
         self.givenName = givenName
         self.familyName = familyName
         self.fullname = set(self.familyName + self.givenName)
-        for name in fullname:
-            AuthorId =+ 1 #Figure out a way to keep track of the authors ID
+        self.authorInternalId = []
+        for i in self.authorInternalId:
+            self.authorInternalId.add(i)
+
+        super().__init__(id)
 
     # methods of person
     def getGivenName(self):
@@ -61,11 +64,13 @@ class Person(IdentifiableEntity):
 
 
 class Publication(IdentifiableEntity):
-    def __init__(self, publicationYear, title, publicationVenue, author):
+    def __init__(self, id, publicationYear, title, publicationVenue, author):
         self.publicationYear = publicationYear
         self.title = title
         self.publicationVenue = publicationVenue
         self.author = set(author)
+
+        super().__init__(id)
 
     # methods of publications
     def getPublicationYear(self):
@@ -104,8 +109,9 @@ class JournalArticle(Publication):
 
 
 class BookChapter(Publication):
-    def __init__(self, chapterNumber):
+    def __init__(self, id, chapterNumber):
         self.chapterNumber = chapterNumber
+        super().__init__(id)
 
     def getChapterNumber(self):
         return self.chapterNumber
@@ -116,9 +122,10 @@ class ProceedingsPaper(Publication):
 
 
 class Venue(IdentifiableEntity):
-    def __init__(self, title, organization):
+    def __init__(self, id, title, organization):
         self.title = title
         self.organization = organization
+        super().__init__(id)
 
     def getTitle(self):
         return self.title
@@ -136,16 +143,18 @@ class Book(Venue):
 
 
 class Proceedings(Venue):
-    def __init__(self, event):
+    def __init__(self, id, event):
         self.event = event
+        super().__init__(id)
 
     def getEvent(self):
         return self.event
 
 
 class Organization(IdentifiableEntity):
-    def __init__(self, name):
+    def __init__(self, id, name):
         self.name = name
+        super().__init__(id)
 
     def getName(self):
         return self.name
@@ -190,6 +199,17 @@ class RelationalQueryProcessor(object):
                  FROM Publication WHERE 
                  publicationYear == Year"""
 
+        querySPARQL = """
+        SELECT ?internalId ?doi ?publicationYear 
+        WHERE {
+        VALUES ?type {
+             <https://schema.org/ScholarlyArticle>
+             <https://schema.org/Chapter>
+             }
+             
+        
+        """
+
         pysqldf(query)
 
     def getPublicationsByAuthorId(self, Id):
@@ -221,14 +241,21 @@ class RelationalQueryProcessor(object):
                    FROM Publication
                    WHERE PublicationId == VenueId"""
 
-    def getJournalArticlesInIssue(self):
+    def getJournalArticlesInIssue(self, issue, volume, id):
         query = """SELECT * 
                    FROM JournalArticle
-                   WHERE issue"""
+                   WHERE id == JournalArticleId
+                   issue == JournalArticleIssue
+                   volume == JournalArticleVolume"""
 
     def getJournalArticlesInVolume (self):
+        query = """SELECT *
+                   FROM JournalArticle
+                   WHERE id == JournalArticleId
+                   volume == JournalArticleVolume"""
     
     def getJournalArticlesInJournal (self):
+        query = """"""
 
     def getProceedingsByEvent (self):
 
@@ -244,6 +271,8 @@ class GenericQueryProcessor(RelationalQueryProcessor):
 
             def __init__(self, queryProcessor):
                 self.queryProcessor = list()
+                for l in self.queryProcessor:
+                    self.queryProcessor.add(l)
 
             def cleanQueryProcessors(self):
                 self.queryProcessor = self.queryProcessor.clear()
