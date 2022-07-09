@@ -1,9 +1,0 @@
-PREFIX GOT: <http://...>
-  
-SELECT
-  
-  WHERE{
-  ?person GOT:col-got-id ?GName .
-  ?person GOT:col-got-id ?FName .
-  
-  }
