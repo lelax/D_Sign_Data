@@ -34,7 +34,7 @@ familyName = URIRef ("https://schema.org/familyName")
 publicationVenue = URIRef("https://schema.org/isPartOf")
 publisher = URIRef ("https://schema.org/publishedBy")
 author = URIRef ("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/isWrittenBy")
-cites = URIRef ("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/isCitedBy")
+cites = URIRef ("http://purl.org/spar/cito/isCitedBy")
 
 from rdflib import Literal
 
