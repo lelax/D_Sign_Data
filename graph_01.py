@@ -39,7 +39,7 @@ cites = URIRef ("http://purl.org/spar/cito/isCitedBy")
 from rdflib import Literal
 
 a_string = Literal("a string")
-a_number = Literal()
+a_number = Literal(5)
 a_boolean = Literal(True)
 
 
