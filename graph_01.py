@@ -11,22 +11,24 @@ from rdflib import URIRef
 Person = URIRef("https://schema.org/Person")
 JournalArticle = URIRef("https://schema.org/ScholarlyArticle")
 BookChapter = URIRef("https://schema.org/Chapter")
-ProceedingsPaper = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/ProceedingsPaper")
+ProceedingsPaper = URIRef("http://purl.org/spar/fabio/ProceedingsPaper")
 Journal = URIRef("https://schema.org/Periodical")
 Book = URIRef("https://schema.org/Book")
-Proceedings = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/Proceedings")
+Proceedings = URIRef("http://purl.org/spar/fabio/AcademicProceedings")
 
 
 # attributes related to classes
 doi = URIRef("https://schema.org/identifier")
 publicationYear = URIRef("https://schema.org/datePublished")
-MostCitedPublication = URIRef()
-MostCitedVenues = URIRef()
-title = URIRef("https://schema.org/name")
+title = URIRef("http://purl.org/dc/terms/title")
 issue = URIRef("https://schema.org/issueNumber")
 volume = URIRef("https://schema.org/volumeNumber")
 identifier = URIRef("https://schema.org/identifier")
 name = URIRef("https://schema.org/name")
+event = URIRef("https://schema.org/Event")
+chapterNumber = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/chapterNumber")
+givenName = URIRef ("https://schema.org/givenName")
+familyName = URIRef ("https://schema.org/familyName")
 
 # relations among classes
 publicationVenue = URIRef("https://schema.org/isPartOf")
