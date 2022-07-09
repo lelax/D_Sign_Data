@@ -26,14 +26,14 @@ volume = URIRef("https://schema.org/volumeNumber")
 identifier = URIRef("https://schema.org/identifier")
 name = URIRef("https://schema.org/name")
 event = URIRef("https://schema.org/Event")
-chapterNumber = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/chapterNumber")
+chapterNumber = URIRef("http://purl.org/spar/fabio/BookChapter")
 givenName = URIRef ("https://schema.org/givenName")
 familyName = URIRef ("https://schema.org/familyName")
 
 # relations among classes
 publicationVenue = URIRef("https://schema.org/isPartOf")
 publisher = URIRef ("https://schema.org/publishedBy")
-author = URIRef ("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/isWrittenBy")
+author = URIRef ("http://purl.org/saws/ontology#isWrittenBy")
 cites = URIRef ("http://purl.org/spar/cito/isCitedBy")
 
 from rdflib import Literal
