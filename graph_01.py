@@ -32,6 +32,9 @@ familyName = URIRef ("https://schema.org/familyName")
 
 # relations among classes
 publicationVenue = URIRef("https://schema.org/isPartOf")
+publisher = URIRef ("https://schema.org/publishedBy")
+author = URIRef ("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/isWrittenBy")
+cites = URIRef ("")
 
 from rdflib import Literal
 
