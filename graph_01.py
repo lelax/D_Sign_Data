@@ -25,6 +25,7 @@ event = URIRef("https://schema.org/Event")
 chapterNumber = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/chapterNumber")
 givenName = URIRef ("https://schema.org/givenName")
 familyName = URIRef ("https://schema.org/familyName")
+venue_type = ("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/venue_type")
 
 # relations among classes
 publicationVenue = URIRef("https://schema.org/isPartOf")
@@ -41,7 +42,6 @@ a_boolean = Literal(True)
 
 from pandas import read_csv, Series
 from rdflib import RDF
-from sys import orig_argv
 
 base_url = "https://github.com/lelax/D_Sign_Data"
 
