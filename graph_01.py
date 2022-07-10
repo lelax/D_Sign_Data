@@ -78,7 +78,6 @@ for idx, row in publications.iterrows():
         # These two statements applies only to journal articles
         my_graph.add((subj, issue, Literal(row["issue"])))
         my_graph.add((subj, volume, Literal(row["volume"])))
-        my_graph.add((subj, RDF.type, Journal))
     else:
         my_graph.add((subj, RDF.type, BookChapter))
         #This statement applies only to book chapters
