@@ -33,8 +33,10 @@ PREFIX GOT: <https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/isCitedBy
 SELECT ?ID ?Title
 
 WHERE {
-?publication GOT:col-got-cite ?_____  .
-?publication GOT:col-got-title ?___  .
+?publication GOT:col-got-cites ?cites  .
+
+"type": "orderby",
+    "variable": "cites_number",
 
 }
 limit 10
@@ -47,8 +49,9 @@ PREFIX GOT: <https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/isCitedBy
 SELECT ?ID ?Title
 
 WHERE {
-?venue GOT:col-got-cite ?_____  .
-?venue GOT:col-got-title ?___  .
+?venue GOT:col-got-cites ?cites  .
+"type": "orderby",
+    "variable": "cites_number",
 
 }
 limit 10
