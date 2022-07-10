@@ -26,7 +26,7 @@ volume = URIRef("https://schema.org/volumeNumber")
 identifier = URIRef("https://schema.org/identifier")
 name = URIRef("https://schema.org/name")
 event = URIRef("https://schema.org/Event")
-chapterNumber = URIRef("http://purl.org/spar/fabio/BookChapter")
+chapterNumber = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/chapterNumber")
 givenName = URIRef ("https://schema.org/givenName")
 familyName = URIRef ("https://schema.org/familyName")
 
@@ -39,15 +39,13 @@ cites = URIRef ("http://purl.org/spar/cito/isCitedBy")
 from rdflib import Literal
 
 a_string = Literal("a string")
-a_number = Literal(5)
+a_number = Literal(17)
 a_boolean = Literal(True)
 
 
 from pandas import read_csv, Series
 from rdflib import RDF
 
-# This is the string defining the base URL used to defined
-# the URLs of all the resources created from the data
 base_url = "https://github.com/lelax/D_Sign_Data"
 
 publications = read_csv("../graph_publications.csv", 
@@ -66,14 +64,25 @@ publications = read_csv("../graph_publications.csv",
                     "event": "string"
                   })
 
+publication_id = {}
+
 for idx, row in publications.iterrows():
     local_id = "publication-" + str(idx)
-    
-    # The shape of the new resources that are publications is
-    # 'https://comp-data.github.io/res/publication-<integer>'
+
     subj = URIRef(base_url + local_id)
     
-    if row["type"] == "journal-article":
+    publication_id[row["doi"]] = subj
+    
+ publication_publisher_id = {}
+
+for idx, row in publications.iterrows():
+    local_id = "publication-" + str(idx)
+
+    subj = URIRef(base_url + local_id)
+    
+    publication_publisher_id[row["publisher"]] = subj
+    
+   if row["type"] == "journal-article":
         my_graph.add((subj, RDF.type, JournalArticle))
 
         # These two statements applies only to journal articles
@@ -81,14 +90,14 @@ for idx, row in publications.iterrows():
         my_graph.add((subj, volume, Literal(row["volume"])))
     else:
         my_graph.add((subj, RDF.type, BookChapter))
-    
-    my_graph.add((subj, name, Literal(row["title"])))
+        #This statement applies only to book chapters
+        my_graph.add((subj, chapterNumber, Literal(row["chapter"])))
+        
+    my_graph.add((subj, title, Literal(row["title"])))
     my_graph.add((subj, identifier, Literal(row["doi"])))
+    my_graph.add((subj, publicationYear, Literal(str(row["publication_year"]))))
+    my_graph.add((subj, publicationVenue, Literal[row["publication_venue"]]))
+    my_graph.add((subj, venue_type, Literal[row["venue_type"]]))
+    my_graph.add((subj, publisher, Literal[row["publisher"]]))
+    my_graph.add((subj, event, Literal[row["event"]]))
     
-    # The original value here has been casted to string since the Date type
-    # in schema.org ('https://schema.org/Date') is actually a string-like value
-    my_graph.add((subj, publicationYear, Literal(str(row["publication year"]))))
-    
-    # The URL of the related publication venue is taken from the previous
-    # dictionary defined when processing the venues
-    my_graph.add((subj, publicationVenue, venue_internal_id[row["publication venue"]]))
