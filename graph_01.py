@@ -24,7 +24,7 @@ volume = URIRef("https://schema.org/volumeNumber")
 identifier = URIRef("https://schema.org/identifier")
 name = URIRef("https://schema.org/name")
 event = URIRef("https://schema.org/Event")
-chapterNumber = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/chapterNumber")
+chapterNumber = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/URIRef/chapterNumber")
 givenName = URIRef ("https://schema.org/givenName")
 familyName = URIRef ("https://schema.org/familyName")
 
