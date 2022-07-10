@@ -1,7 +1,7 @@
  
 getPublicationsPublishedInYear
-#It returns a data frame with all the publications (i.e. the rows)
-# that have been published in the input year (e.g. 2020).
+#It returns a data frame with all the publications (i.e. the rows) that have been published in the input year (e.g. 2020).
+
 PREFIX GOT: <https://schema.org/datePublished>
 
 SELECT ?ID ?Title
@@ -13,9 +13,7 @@ WHERE {
 }
 
 getPublicationsByAuthorId
-#It returns a data frame with all the publications (i.e. the rows) 
-# that have been authored by the person having the identifier specified 
-# as input (e.g. "0000-0001-9857-1511").
+#It returns a data frame with all the publications (i.e. the rows) that have been authored by the person having the identifier specified as input (e.g. "0000-0001-9857-1511").
 
 PREFIX GOT: <https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/isWrittenBy>
 
@@ -28,8 +26,7 @@ WHERE {
 }
 
 getMostCitedPublication 
-#It returns a data frame with all the publications (i.e. the rows) 
-# that have received the most number of citations by other publications.
+#It returns a data frame with all the publications (i.e. the rows) that have received the most number of citations by other publications.
 
 PREFIX GOT: <https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/isCitedBy>
 
@@ -43,9 +40,7 @@ WHERE {
 limit 10
 
 getMostCitedVenue 
-#It returns a data frame with all the venues (i.e. the rows) containing 
-# the publications that, overall, have received the most number of 
-# citations by other publications.
+#It returns a data frame with all the venues (i.e. the rows) containing the publications that, overall, have received the most number of citations by other publications.
 
 PREFIX GOT: <https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/isCitedBy>
 
@@ -59,13 +54,10 @@ WHERE {
 limit 10
 
 getVenuesByPublisherId 
-#It returns a data frame with all the venues (i.e. the rows) 
-# that have been published by the organisation having the identifier 
-# specified as input (e.g. "crossref:78").
+#It returns a data frame with all the venues (i.e. the rows) that have been published by the organisation having the identifier specified as input (e.g. "crossref:78").
 
 getPublicationInVenue: 
-#It returns a data frame with all the publications (i.e. the rows) 
-#that have been included in the venue having the identifier specified as input (e.g. "issn:0944-1344").
+#It returns a data frame with all the publications (i.e. the rows) that have been included in the venue having the identifier specified as input (e.g. "issn:0944-1344").
 
 PREFIX GOT: <https://schema.org/isPartOf>
 
@@ -163,7 +155,7 @@ filter contains(?name,"doe")
 }
 
 getDistinctPublisherOfPublications: 
-#It returns a data frame with all the distinct publishers (i.e. the rows) that #have published the venues of the publications with identifiers those #specified as input (e.g. [ "doi:10.1080/21645515.2021.1910000", "doi:10.3390/ijfs9030035" ]).
+#It returns a data frame with all the distinct publishers (i.e. the rows) that #have published the venues of the publications with identifiers those specified as input (e.g. [ "doi:10.1080/21645515.2021.1910000", "doi:10.3390/ijfs9030035" ]).
 
 PREFIX GOT: <https://schema.org/publishedBy>
 
