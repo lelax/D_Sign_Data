@@ -1,7 +1,4 @@
-from sys import orig_argv
 from rdflib import Graph
-
-from Classes import Organization, Publication, Venue
 
 my_graph = Graph()
 
@@ -15,7 +12,6 @@ ProceedingsPaper = URIRef("http://purl.org/spar/fabio/ProceedingsPaper")
 Journal = URIRef("https://schema.org/Periodical")
 Book = URIRef("https://schema.org/Book")
 Proceedings = URIRef("http://purl.org/spar/fabio/AcademicProceedings")
-
 
 # attributes related to classes
 doi = URIRef("https://schema.org/identifier")
@@ -39,60 +35,54 @@ cites = URIRef ("http://purl.org/spar/cito/isCitedBy")
 from rdflib import Literal
 
 a_string = Literal("a string")
-a_number = Literal(17)
+a_number = Literal(42)
 a_boolean = Literal(True)
 
 
 from pandas import read_csv, Series
 from rdflib import RDF
+from sys import orig_argv
 
 base_url = "https://github.com/lelax/D_Sign_Data"
 
-publications = read_csv("../graph_publications.csv", 
+publications = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
                   keep_default_na=False,
                   dtype={
-                      "doi": "string",
-                      "title": "string",
-                      "type": "string",
-                    "publication_year": "int",
-                    "issue": "string",
-                    "volume": "string",
-                    "chapter": "int",
-                    "publication_venue": "string",
-                    "venue_type": "string",
-                    "publisher": "string",
-                    "event": "string"
+                     "doi": "string",
+                     "title": "string",
+                     "type": "string",
+                     "publication_year": "int",
+                     "issue": "string",
+                     "volume": "string",
+                     "chapter": "int",
+                     "publication_venue": "string",
+                     "venue_type": "string",
+                     "publisher": "string",
+                     "event": "string"
                   })
 
 publication_id = {}
-
+publisher_id = {}
 for idx, row in publications.iterrows():
     local_id = "publication-" + str(idx)
-
+    
     subj = URIRef(base_url + local_id)
     
     publication_id[row["doi"]] = subj
-    
- publication_publisher_id = {}
+    publisher_id[row["publisher"]] = subj
 
-for idx, row in publications.iterrows():
-    local_id = "publication-" + str(idx)
-
-    subj = URIRef(base_url + local_id)
     
-    publication_publisher_id[row["publisher"]] = subj
-    
-   if row["type"] == "journal-article":
+    if row["type"] == "journal-article":
         my_graph.add((subj, RDF.type, JournalArticle))
-
         # These two statements applies only to journal articles
         my_graph.add((subj, issue, Literal(row["issue"])))
         my_graph.add((subj, volume, Literal(row["volume"])))
+        my_graph.add((subj, RDF.type, Journal))
     else:
         my_graph.add((subj, RDF.type, BookChapter))
         #This statement applies only to book chapters
         my_graph.add((subj, chapterNumber, Literal(row["chapter"])))
-        
+    
     my_graph.add((subj, title, Literal(row["title"])))
     my_graph.add((subj, identifier, Literal(row["doi"])))
     my_graph.add((subj, publicationYear, Literal(str(row["publication_year"]))))
@@ -100,4 +90,5 @@ for idx, row in publications.iterrows():
     my_graph.add((subj, venue_type, Literal[row["venue_type"]]))
     my_graph.add((subj, publisher, Literal[row["publisher"]]))
     my_graph.add((subj, event, Literal[row["event"]]))
+
     
