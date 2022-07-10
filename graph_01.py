@@ -12,6 +12,8 @@ ProceedingsPaper = URIRef("http://purl.org/spar/fabio/ProceedingsPaper")
 Journal = URIRef("https://schema.org/Periodical")
 Book = URIRef("https://schema.org/Book")
 Proceedings = URIRef("http://purl.org/spar/fabio/AcademicProceedings")
+Venue = URIRef("http://purl.org/dc/elements/1.1/source")
+Organization = URIRef("https://schema.org/Organization")
 
 # attributes related to classes
 doi = URIRef("https://schema.org/identifier")
@@ -25,7 +27,6 @@ event = URIRef("https://schema.org/Event")
 chapterNumber = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/chapterNumber")
 givenName = URIRef ("https://schema.org/givenName")
 familyName = URIRef ("https://schema.org/familyName")
-venue_type = ("https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/venue_type")
 
 # relations among classes
 publicationVenue = URIRef("https://schema.org/isPartOf")
@@ -48,13 +49,13 @@ base_url = "https://github.com/lelax/D_Sign_Data"
 publications = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
                   keep_default_na=False,
                   dtype={
-                     "doi": "string",
+                     "id": "string",
                      "title": "string",
                      "type": "string",
-                     "publication_year": "int",
+                     "publication_year": "string",
                      "issue": "string",
                      "volume": "string",
-                     "chapter": "int",
+                     "chapter": "string",
                      "publication_venue": "string",
                      "venue_type": "string",
                      "publisher": "string",
@@ -68,7 +69,7 @@ for idx, row in publications.iterrows():
     
     subj = URIRef(base_url + local_id)
     
-    publication_id[row["doi"]] = subj
+    publication_id[row["id"]] = subj
     publisher_id[row["publisher"]] = subj
 
     
@@ -84,11 +85,12 @@ for idx, row in publications.iterrows():
         my_graph.add((subj, chapterNumber, Literal(row["chapter"])))
     
     my_graph.add((subj, title, Literal(row["title"])))
-    my_graph.add((subj, identifier, Literal(row["doi"])))
-    my_graph.add((subj, publicationYear, Literal(str(row["publication_year"]))))
-    my_graph.add((subj, publicationVenue, Literal[row["publication_venue"]]))
-    my_graph.add((subj, venue_type, Literal[row["venue_type"]]))
-    my_graph.add((subj, publisher, Literal[row["publisher"]]))
-    my_graph.add((subj, event, Literal[row["event"]]))
+    my_graph.add((subj, identifier, Literal(row["id"])))
+    my_graph.add((subj, publicationYear, Literal(row["publication_year"])))
+    my_graph.add((subj, publicationVenue, Literal(row["publication_venue"])))
+    my_graph.add((subj, Venue, Literal(row["venue_type"])))
+    my_graph.add((subj, publisher, Literal(row["publisher"])))
+    my_graph.add((subj, event, Literal(row["event"])))
 
-    
+print("-- Number of triples added to the graph after processing the venues")
+print(len(my_graph))
