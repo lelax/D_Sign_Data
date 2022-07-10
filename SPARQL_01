@@ -7,8 +7,8 @@ PREFIX GOT: <https://schema.org/datePublished>
 SELECT ?ID ?Title
 
 WHERE {
-?publication GOT:col-got-publicationYear ?2020  .
-?publication GOT:col-got-publicationYear ?PublicationYear  .
+?publication GOT:col-got-publication_year ?2020  .
+?publication GOT:col-got-publication_year ?publication_year  .
 
 }
 
@@ -20,8 +20,8 @@ PREFIX GOT: <https://github.com/lelax/D_Sign_Data/blob/main/UMLclasses/isWritten
 SELECT ?ID ?Title
 
 WHERE {
-?publication GOT:col-got-authorID ?"0000-0001-9857-1511"  .
-?publication GOT:col-got-authorID ?authorID  .
+?publication GOT:col-got-orcid ?"0000-0001-9857-1511"  .
+?publication GOT:col-got-orcid ?orcid  .
 
 }
 
