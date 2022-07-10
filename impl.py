@@ -199,18 +199,8 @@ class RelationalQueryProcessor(object):
                  FROM Publication WHERE 
                  publicationYear == Year"""
 
-        querySPARQL = """
-        SELECT ?internalId ?doi ?publicationYear 
-        WHERE {
-        VALUES ?type {
-             <https://schema.org/ScholarlyArticle>
-             <https://schema.org/Chapter>
-             }
-             
-        
-        """
+        publicationYear = read_sql(query, con)
 
-        pysqldf(query)
 
     def getPublicationsByAuthorId(self, Id):
         query = """SELECT publication 
@@ -254,10 +244,17 @@ class RelationalQueryProcessor(object):
                    WHERE id == JournalArticleId
                    volume == JournalArticleVolume"""
     
-    def getJournalArticlesInJournal (self):
-        query = """"""
+    def getJournalArticlesInJournal (self, Id):
+        query = """SELECT *
+                   FROM JournalArticle
+                   WHERE Id == JournalArticleId"""
+
+        journalArticleInJournal = read_sql(query)
 
     def getProceedingsByEvent (self):
+        query = """SELECT *
+                   FROM Proceedings
+                   WHERE Name in Event"""
 
     def getPublicationAuthors (self):
 
@@ -279,3 +276,7 @@ class GenericQueryProcessor(RelationalQueryProcessor):
 
             def addQueryProcessor(self):
                 self.queryProcessor.add(self)
+
+            def remove_dotzero(self):
+                return self.replace(".0","")
+
