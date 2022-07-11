@@ -1,3 +1,27 @@
+from csv import reader
+
+class TriplestoreProcessor(object):
+    def __init__(self, endpointUrl=""): # the variable containing the URL of the SPARQL endpoint of the triplestore, initially set as an empty string, that will be updated with the method setEndpointUrl
+        self.endpointUrl = endpointUrl
+        
+    # Methods:
+    def getEndpointUrl(self):  # it returns the path of the database
+        return self.endpointUrl
+
+    def setEndpointUrl(self, newURL): # it enables to set a new URL for the SPARQL endpoint of the triplestore.
+        self.endpointUrl = newURL
+        
+
+class TriplestoreDataProcessor(object):
+    def __init__(self):
+        self.Data = None
+
+    # Method:
+    def uploadData(self, Data): # it enables to upload the collection of data specified in the input file path (either in CSV or JSON) into the database.
+        self.Data = Data
+        with open(self.Data, "r", encoding="utf-8") as f:
+            Data = reader(f)
+
 from rdflib import Graph
 
 my_graph = Graph()
