@@ -1,11 +1,12 @@
 import pandas as pd
 import sqlite3
-
-
 from sqlite3 import connect
-from pandas import read_csv, Series, read_sql
+from pandas import read_csv
+from pandas import Series
+from pandas import read_sql
 from csv import reader
 from pandasql import sqldf
+from pandas import merge
 
 
 
@@ -162,16 +163,18 @@ class Organization(IdentifiableEntity):
 
 class RelationalDataProcessor(object):
 
-    def __init__(self):
+    def __init__(self, uploadData):
             self.uploadData = uploadData
 
-        def read(self, Data):
+        def uploadData(self, Data):
             if ".json" in Data:
-                readjson = read_json(Data)
-                print(pd.DataFrame(readjson))
+                readjson = pd.read_json(Data)
+                readjson.to_sql(self.uploadData(), conn, if_exists='append', index=False)
             else:
-                readcsv = read_csv(Data)
-                print(pd.DataFrame(readcsv))
+                readcsv = pd.read_csv(Data)
+                readcsv.to_sql(self.uploadData(), conn, if_exists='append', index=False)
+
+
 
 
 class RelationalProcessor(object):
@@ -188,18 +191,110 @@ class RelationalProcessor(object):
             con.commit()
 
 
-class RelationalQueryProcessor(object):
+#CREATING TABLES FOR THE RELATIONAL DATABASE
+    venues = read_csv(self.uploadData,
+                      keep_default_na=False,
+                      dtype={
+                       "id": "string",
+                       "name": "string",
+                       "type": "string"
+                      })
+
+    venues_ids = venues[["id"]]
+    venue_internal_id = []
+
+    for idx, row in venues_ids.iterrows():
+        venue_internal_id.append("venue-"+str(idx))
+
+    venues_ids.insert(0, "venueId", Series(venue_internal_id, dtype="string"))
+
+
+    #Dataframe of Journals
+
+    journals = venues.query("type =='journal'")
+    df_joined = merge(journals, venues_ids, left_on="id", right_on="id")
+    journals = df_joined[["venueId","name"]]
+    journals = journals.rename(columns="venueId": "internalId")
+
+    #DataFrame of Books
+    books = venues.query("type == 'book'")
+    df_joined = merge(books, venues_ids, left_on="id", right_on="id")
+    books = df_joined[["venueId", "name"]]
+    books = books.rename(columns={"venueId": "internalId"})
+
+
+    #DataFrame for proceedings
+
+    proceedings = venues.query("type == 'proceedings'")
+    df_joined = merge(proceedings, venues_ids,left_on="id", right_on="id")
+    proceedings = df_joined[["venueId","name"]]
+    proceedings = proceedings.rename(columns={"venueId": "internalId"})
+
+    #DataFrame for Organization
+
+    organization = venues.query("type == 'organization'")
+    df_joined = merge(organization, venues_ids, left_on="id", right_on="id")
+    organization = df_joined[["venueId","name"]]
+    organization = organization.rename(columns={"venueId": "internalId"})
+
+    #DataFrame for Publications
+
+    publications = read_csv(self.uploadData,
+                            keep_default_na=False,
+                            dtype={
+                                "doi": "string",
+                                "title": "string",
+                                "publication year": "int",
+                                "publication venue": "string",
+                                "type": "string",
+                                "issue": "string",
+                                "volume": "string"
+                            })
+
+    publication_internal_id = []
+    for idx, row in publications.iterrows():
+        publication_internal_id.append("publication-"+str(idx))
+
+    publications.insert(0, "internalId", Series(publication_internal_id, dtype="string"))
+
+    #Data Frame for journal articles
+
+    journal_articles = publications.query("type == 'journal article'")
+    df_joined = merge(journal_articles, venues_ids, left_on="publication venue", right_on="id")
+    journal_articles = df_joined[["internalId", "doi", "publication year", "title", "issue", "volume", "venueId"]]
+    journal_articles = journal_articles.rename(columns={"publication year": "publicationYear", "venueId": "publicationVenue""})
+
+    #DataFrame for BookChapter
+
+    book_chapter = publications.query("type == 'book chapter'")
+    df_joined = merge(book_chapter, venues_ids, left_on="book chapter", right_on="id")
+    book_chapter = df_joined[["internalId", "doi", "publication year", "title", "venueId"]]
+    book_chapter = book_chapter.rename(columns={"publication year": "publicationYear",
+                                                "venueId": "publicationVenue"})
+
+    #DataFrame for ProceedingsPaper
+
+    proceedingsPaper = publications.query("type == 'proceedings paper'")
+    df_joined = merge(proceedingsPaper, venues_ids, left_on="publication venue", right_on="id")
+    proceedingsPaper = df_joined[["internalId", "doi", "title", "venueId"]]
+    proceedingsPaper = proceedingsPaper.rename(columns={})
+
+    #
+ class RelationalQueryProcessor(object):
 
     def __init__(self):
         self.RelationalQueryProcessor = RelationalQueryProcessor
 
       
     def getPublicationsPublishedInYear(self, Year):
-        query = """SELECT publicationYear 
-                 FROM Publication WHERE 
-                 publicationYear == Year"""
 
-        publicationYear = read_sql(query, con)
+        with connect (self.dbPath) as con:
+
+         query = """SELECT publicationYear 
+                 FROM Publication WHERE 
+                 publication_year == self.Year"""
+
+          publicationYear = read_sql(query, con)
 
 
     def getPublicationsByAuthorId(self, Id):
@@ -249,7 +344,7 @@ class RelationalQueryProcessor(object):
                    FROM JournalArticle
                    WHERE Id == JournalArticleId"""
 
-        journalArticleInJournal = read_sql(query)
+        journalArticleInJournal = read_sql(query, con)
 
     def getProceedingsByEvent (self):
         query = """SELECT *
@@ -277,6 +372,6 @@ class GenericQueryProcessor(RelationalQueryProcessor):
             def addQueryProcessor(self):
                 self.queryProcessor.add(self)
 
-            def remove_dotzero(self):
+            def removeDotZero(self):
                 return self.replace(".0","")
 
