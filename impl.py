@@ -277,7 +277,13 @@ class RelationalProcessor(object):
     proceedingsPaper = publications.query("type == 'proceedings paper'")
     df_joined = merge(proceedingsPaper, venues_ids, left_on="publication venue", right_on="id")
     proceedingsPaper = df_joined[["internalId", "doi", "title", "venueId"]]
-    proceedingsPaper = proceedingsPaper.rename(columns={})
+    proceedingsPaper = proceedingsPaper.rename(columns={"proceedings paper": "proceedingsPaper",
+                                                        "venueId": "proceedingsId"})
+
+    #DataFrame for Person
+
+    person = publications.query("type == 'author'")
+    
 
     #
  class RelationalQueryProcessor(object):
