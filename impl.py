@@ -283,7 +283,7 @@ class RelationalProcessor(object):
     #DataFrame for Person
 
     person = publications.query("type == 'author'")
-    
+    df_joined = merge(author, venues_ids, left_on="")
 
     #
  class RelationalQueryProcessor(object):
