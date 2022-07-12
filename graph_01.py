@@ -56,7 +56,7 @@ familyName = URIRef ("https://schema.org/familyName")
 publicationVenue = URIRef("https://schema.org/isPartOf")
 publisher = URIRef ("https://schema.org/publishedBy")
 author = URIRef ("http://purl.org/saws/ontology#isWrittenBy")
-cites = URIRef ("http://purl.org/spar/cito/isCitedBy")
+cites = URIRef ("https://schema.org/citation")
 
 from rdflib import Literal
 
@@ -72,7 +72,7 @@ base_url = "https://github.com/lelax/D_Sign_Data"
 
 graph_publications = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
                  keep_default_na=False,
-                  dtype={
+                 dtype={
                      "id": "string",
                      "title": "string",
                      "type": "string",
@@ -118,9 +118,37 @@ for idx, row in graph_publications.iterrows():
         my_graph.add((subj, event, Literal(row["event"])))
 
     my_graph.add((subj, title, Literal(row["title"])))
-    my_graph.add((subj, identifier, Literal(row["id"])))
+    my_graph.add((subj, doi, Literal(row["id"])))
     my_graph.add((subj, publicationYear, Literal(str(row["publication_year"]))))
     my_graph.add((subj, publicationVenue, Literal(row["publication_venue"])))
     my_graph.add((subj, Venue, Literal(row["venue_type"])))
     my_graph.add((subj, publisher, Literal(row["publisher"])))
     my_graph.add((subj, event, Literal(row["event"])))
+
+from json import load
+import pandas as pd
+
+with open("../D_Sign_Data-1\import\graph_other_data.json", "r", encoding="utf-8") as f:
+    json_doc = load(f)
+    
+
+def flatteningJSON(b): 
+    ans = {} 
+    def flat(i, na =''):
+        #nested key-value pair: dict type
+        if type(i) is dict: 
+            for a in i: 
+                flat(i[a], na + a + '_')
+        #nested key-value pair: list type
+        elif type(i) is list: 
+            j = 0  
+            for a in i:                 
+                flat(a, na + str(j) + '_') 
+                j += 1
+        else: 
+            ans[na[:-1]] = i 
+    flat(b) 
+    return ans
+
+flatteningJSON(json_doc)
+
