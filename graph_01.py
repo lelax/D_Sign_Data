@@ -1,9 +1,73 @@
+from csv import reader
+
+class TriplestoreProcessor(object):
+    def __init__(self, endpointUrl=""): # the variable containing the URL of the SPARQL endpoint of the triplestore, initially set as an empty string, that will be updated with the method setEndpointUrl
+        self.endpointUrl = endpointUrl
+        
+    # Methods:
+    def getEndpointUrl(self):  # it returns the path of the database
+        return self.endpointUrl
+
+    def setEndpointUrl(self, newURL): # it enables to set a new URL for the SPARQL endpoint of the triplestore.
+        self.endpointUrl = newURL
+        
+
+class TriplestoreDataProcessor(object):
+    def __init__(self):
+        self.Data = None
+
+    # Method:
+    def uploadData(self, Data): # it enables to upload the collection of data specified in the input file path (either in CSV or JSON) into the database.
+        self.Data = Data
+        with open(self.Data, "r", encoding="utf-8") as f:
+            Data = reader(f)
+
+from rdflib import Graph
+
+my_graph = Graph()
+
+from rdflib import URIRef
+
+# classes of resources
+JournalArticle = URIRef("https://schema.org/ScholarlyArticle")
+BookChapter = URIRef("https://schema.org/Chapter")
+ProceedingsPaper = URIRef("http://purl.org/spar/fabio/ProceedingsPaper")
+Journal = URIRef("https://schema.org/Periodical")
+Book = URIRef("https://schema.org/Book")
+Proceedings = URIRef("http://purl.org/spar/fabio/AcademicProceedings")
+Publication = URIRef("https://schema.org/publication")
+
+# attributes related to classes
+publicationYear = URIRef("https://schema.org/datePublished")
+title = URIRef("http://purl.org/dc/terms/title")
+issue = URIRef("https://schema.org/issueNumber")
+volume = URIRef("https://schema.org/volumeNumber")
+identifier = URIRef("https://schema.org/identifier")
+name = URIRef("https://schema.org/name")
+event = URIRef("https://schema.org/Event")
+chapterNumber = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/URIRef/chapterNumber")
+givenName = URIRef ("https://schema.org/givenName")
+familyName = URIRef ("https://schema.org/familyName")
+
+# relations among classes
+publicationVenue = URIRef("https://schema.org/isPartOf")
+publisher = URIRef ("https://schema.org/publishedBy")
+author = URIRef ("http://purl.org/saws/ontology#isWrittenBy")
+cites = URIRef ("https://schema.org/citation")
+
+from rdflib import Literal
+
+a_string = Literal("a string")
+a_number = Literal(42)
+a_boolean = Literal(True)
+
+
 from pandas import read_csv, Series
 from rdflib import RDF
 
 base_url = "https://github.com/lelax/D_Sign_Data"
 
-publications = read_csv("graph_publications.csv", 
+publications = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
                  keep_default_na=False,
                  dtype={
                      "id": "string",
@@ -41,7 +105,7 @@ for idx, row in publications.iterrows():
 
 
 
-venues = read_csv("graph_publications.csv", 
+venues = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
                  keep_default_na=False,
                  dtype={
                      "venue_type": "string",
