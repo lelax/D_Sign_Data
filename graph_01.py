@@ -139,4 +139,17 @@ for idx, row in venues.iterrows():
 
     my_graph.add((subj, title, Literal(row["publication_venue"])))
     my_graph.add((subj, Venue, Literal(row["venue_type"])))
+    
+    from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+
+store = SPARQLUpdateStore()
+
+endpoint = 'http://127.0.0.1:9999/blazegraph/sparql'
+
+store.open((endpoint, endpoint))
+
+for triple in my_graph.triples((None, None, None)):
+   store.add(triple)
+    
+store.close()
 
