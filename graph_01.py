@@ -3,7 +3,7 @@ from rdflib import RDF
 
 base_url = "https://github.com/lelax/D_Sign_Data"
 
-publications = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
+publications = read_csv("graph_publications.csv", 
                  keep_default_na=False,
                  dtype={
                      "id": "string",
@@ -41,7 +41,7 @@ for idx, row in publications.iterrows():
 
 
 
-venues = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
+venues = read_csv("graph_publications.csv", 
                  keep_default_na=False,
                  dtype={
                      "venue_type": "string",
