@@ -40,7 +40,6 @@ Venue = URIRef("http://purl.org/dc/elements/1.1/source")
 Organization = URIRef("https://schema.org/Organization")
 
 # attributes related to classes
-doi = URIRef("https://schema.org/identifier")
 publicationYear = URIRef("https://schema.org/datePublished")
 title = URIRef("http://purl.org/dc/terms/title")
 issue = URIRef("https://schema.org/issueNumber")
@@ -70,7 +69,7 @@ from rdflib import RDF
 
 base_url = "https://github.com/lelax/D_Sign_Data"
 
-graph_publications = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
+publications = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
                  keep_default_na=False,
                  dtype={
                      "id": "string",
@@ -80,21 +79,14 @@ graph_publications = read_csv("../D_Sign_Data-1\import\graph_publications.csv",
                      "issue": "string",
                      "volume": "string",
                      "chapter": "string",
-                     "publication_venue": "string",
-                     "venue_type": "string",
                      "publisher": "string",
                      "event": "string"
                   })
 
-publication_id = {}
-publisher_id = {}
-for idx, row in graph_publications.iterrows():
+for idx, row in publications.iterrows():
     local_id = "publication-" + str(idx)
     
     subj = URIRef(base_url + local_id)
-    
-    publication_id[row["id"]] = subj
-    publisher_id[row["publisher"]] = subj
 
     if row["type"] == "journal-article":
         my_graph.add((subj, RDF.type, JournalArticle))
@@ -118,37 +110,33 @@ for idx, row in graph_publications.iterrows():
         my_graph.add((subj, event, Literal(row["event"])))
 
     my_graph.add((subj, title, Literal(row["title"])))
-    my_graph.add((subj, doi, Literal(row["id"])))
+    my_graph.add((subj, identifier, Literal(row["id"])))
     my_graph.add((subj, publicationYear, Literal(str(row["publication_year"]))))
-    my_graph.add((subj, publicationVenue, Literal(row["publication_venue"])))
-    my_graph.add((subj, Venue, Literal(row["venue_type"])))
     my_graph.add((subj, publisher, Literal(row["publisher"])))
     my_graph.add((subj, event, Literal(row["event"])))
 
-from json import load
-import pandas as pd
 
-with open("../D_Sign_Data-1\import\graph_other_data.json", "r", encoding="utf-8") as f:
-    json_doc = load(f)
+venues = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
+                 keep_default_na=False,
+                 dtype={
+                     "publication_venue": "string",
+                     "venue_type": "string",
+                  })
+
+for idx, row in venues.iterrows():
+    local_id = "venues-" + str(idx)
     
+    subj = URIRef(base_url + local_id)
 
-def flatteningJSON(b): 
-    ans = {} 
-    def flat(i, na =''):
-        #nested key-value pair: dict type
-        if type(i) is dict: 
-            for a in i: 
-                flat(i[a], na + a + '_')
-        #nested key-value pair: list type
-        elif type(i) is list: 
-            j = 0  
-            for a in i:                 
-                flat(a, na + str(j) + '_') 
-                j += 1
-        else: 
-            ans[na[:-1]] = i 
-    flat(b) 
-    return ans
+    if row["venue_type"] == "journal":
+        my_graph.add((subj, RDF.type, Journal))
+    elif row["venue_type"] == "book":
+        my_graph.add((subj, RDF.type, BookChapter))
+    else:
+        my_graph.add((subj, RDF.type, Proceedings))
+        #This statement applies only to proceedings
+        my_graph.add((subj, event, Literal(row["event"])))
 
-flatteningJSON(json_doc)
+    my_graph.add((subj, title, Literal(row["publication_venue"])))
+    my_graph.add((subj, Venue, Literal(row["venue_type"])))
 
