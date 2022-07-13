@@ -26,7 +26,7 @@ class TriplestoreQueryProcessor(object):
     ?s rdf:type schema:ScholarlyArticle  .
     ?s schema:cites ?cites  .
         "type": "orderby",
-        "variable": "cites_number",
+        "variable": "cites_number".
     }
     limit 10"""
 
