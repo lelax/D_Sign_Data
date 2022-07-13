@@ -3,89 +3,89 @@ class GenericQueryProcessor():
 
     def addQueryProcessor(qp):
         qps.append(qp)
-        
-    def getPublicationPublishedinYear(qp, year):
+
+    def getPublicationPublishedinYear(self, qp, year):
         result = []
         for qp in qps:
-            result.append(qp.getPublicationsPublishedInYear(qp, year))
+            result.append(qp.getPublicationsPublishedInYear(self,qp, year))
         
         return result
    
-    def getPublicationsByAuthorId(qp, author):
+    def getPublicationsByAuthorId(self, qp, author):
         result = []
         for qp in qps:
-            result.append(qp.getPublicationsByAuthorId(qp, author))
+            result.append(qp.getPublicationsByAuthorId(self, qp, author))
         
         return result
        
-    def getMostCitedPublication(qp, cites):
+    def getMostCitedPublication(self, qp, cites):
         result = []
         for qp in qps:
-            result.append(qp.getMostCitedPublication(qp, cites))
+            result.append(qp.getMostCitedPublication(self, qp, cites))
         
         return result
     
        
-    def getMostCitedVenue(qp, cites):
+    def getMostCitedVenue(self, qp, cites):
         result = []
         for qp in qps:
-            result.append(qp.getMostCitedVenue(qp, cites))
+            result.append(qp.getMostCitedVenue(self, qp, cites))
         
         return result
     
-    def getVenuesByPublisherId(qp, venue_id):
+    def getVenuesByPublisherId(self, qp, venue_id):
         result = []
         for qp in qps:
-            result.append(qp.getVenuesByPublisherId(qp, venue_id))
+            result.append(qp.getVenuesByPublisherId(self, qp, venue_id))
         
         return result
     
-    def getJournalArticlesInIssue(qp, issue, volume, identifier):
+    def getJournalArticlesInIssue(self, qp, issue, volume, identifier):
         result = []
         for qp in qps:
-            result.append(qp.getJournalArticlesInIssue(qp, issue, volume, identifier))
+            result.append(qp.getJournalArticlesInIssue(self, qp, issue, volume, identifier))
         
         return result
     
-    def getJournalArticlesInVolume(qp, volume, identifier):
+    def getJournalArticlesInVolume(self, qp, volume, identifier):
         result = []
         for qp in qps:
-            result.append(qp.getJournalArticlesInVolume(qp, volume, identifier))
+            result.append(qp.getJournalArticlesInVolume(self, qp, volume, identifier))
         
         return result
 
-    def getJournalArticlesInJournal(qp, identifier):
+    def getJournalArticlesInJournal(self, qp, identifier):
         result = []
         for qp in qps:
-            result.append(qp.getJournalArticlesInJournal(qp, identifier))
+            result.append(qp.getJournalArticlesInJournal(self, qp, identifier))
         
         return result
     
-    def getProceedingsByEvent(qp, event, name):
+    def getProceedingsByEvent(self, qp, event, name):
         result = []
         for qp in qps:
-            result.append(qp.getProceedingsByEvent(qp, event, name))
+            result.append(qp.getProceedingsByEvent(self, qp, event, name))
         
         return result
     
-    def getPublicationAuthors(qp, author, identifier):
+    def getPublicationAuthors(self, qp, author, identifier):
         result = []
         for qp in qps:
-            result.append(qp.getPublicationAuthors(qp, author, identifier))
+            result.append(qp.getPublicationAuthors(self, qp, author, identifier))
         
         return result
 
-    def getPublicationsByAuthorName(qp, author, name):
+    def getPublicationsByAuthorName(self, qp, author, name):
         result = []
         for qp in qps:
-            result.append(qp.getPublicationsByAuthorName(qp, author, name))
+            result.append(qp.getPublicationsByAuthorName(self, qp, author, name))
         
         return result
 
-    def getDistinctPublisherOfPublication(qp, publisher, venue_id, identifier):
+    def getDistinctPublisherOfPublication(self, qp, publisher, venue_id, identifier):
         result = []
         for qp in qps:
-            result.append(qp.getPublicationsByAuthorName(qp, publisher, venue_id, identifier))
+            result.append(qp.getPublicationsByAuthorName(self, qp, publisher, venue_id, identifier))
         
         return result
     
