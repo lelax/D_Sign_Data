@@ -100,15 +100,6 @@ for idx, row in publications.iterrows():
     else: 
         my_graph.add((subj, RDF.type, ProceedingsPaper))
 
-    if row["venue_type"] == "journal":
-        my_graph.add((subj, RDF.type, Journal))
-    elif row["venue_type"] == "book":
-        my_graph.add((subj, RDF.type, BookChapter))
-    else:
-        my_graph.add((subj, RDF.type, Proceedings))
-        #This statement applies only to proceedings
-        my_graph.add((subj, event, Literal(row["event"])))
-
     my_graph.add((subj, title, Literal(row["title"])))
     my_graph.add((subj, identifier, Literal(row["id"])))
     my_graph.add((subj, publicationYear, Literal(str(row["publication_year"]))))
