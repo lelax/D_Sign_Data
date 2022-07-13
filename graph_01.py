@@ -29,15 +29,13 @@ my_graph = Graph()
 from rdflib import URIRef
 
 # classes of resources
-Person = URIRef("https://schema.org/Person")
 JournalArticle = URIRef("https://schema.org/ScholarlyArticle")
 BookChapter = URIRef("https://schema.org/Chapter")
 ProceedingsPaper = URIRef("http://purl.org/spar/fabio/ProceedingsPaper")
 Journal = URIRef("https://schema.org/Periodical")
 Book = URIRef("https://schema.org/Book")
 Proceedings = URIRef("http://purl.org/spar/fabio/AcademicProceedings")
-Venue = URIRef("http://purl.org/dc/elements/1.1/source")
-Organization = URIRef("https://schema.org/Organization")
+Publication = URIRef("https://schema.org/publication")
 
 # attributes related to classes
 publicationYear = URIRef("https://schema.org/datePublished")
@@ -76,11 +74,10 @@ publications = read_csv("../D_Sign_Data-1\import\graph_publications.csv",
                      "title": "string",
                      "type": "string",
                      "publication_year": "int",
+                     "publication_venue": "string",
                      "issue": "string",
                      "volume": "string",
                      "chapter": "string",
-                     "publisher": "string",
-                     "event": "string"
                   })
 
 for idx, row in publications.iterrows():
@@ -100,18 +97,19 @@ for idx, row in publications.iterrows():
     else: 
         my_graph.add((subj, RDF.type, ProceedingsPaper))
 
+    my_graph.add((subj, cites, Publication))
     my_graph.add((subj, title, Literal(row["title"])))
-    my_graph.add((subj, identifier, Literal(row["id"])))
     my_graph.add((subj, publicationYear, Literal(str(row["publication_year"]))))
-    my_graph.add((subj, publisher, Literal(row["publisher"])))
-    my_graph.add((subj, event, Literal(row["event"])))
+    my_graph.add((subj, publicationVenue, Literal(row["publication_venue"])))
+    my_graph.add((subj, identifier, Literal(str(row["id"]))))
 
 
 venues = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
                  keep_default_na=False,
                  dtype={
-                     "publication_venue": "string",
                      "venue_type": "string",
+                     "publisher": "string",
+                     "event": "string"
                   })
 
 for idx, row in venues.iterrows():
@@ -128,20 +126,5 @@ for idx, row in venues.iterrows():
         #This statement applies only to proceedings
         my_graph.add((subj, event, Literal(row["event"])))
 
-    my_graph.add((subj, title, Literal(row["publication_venue"])))
-    my_graph.add((subj, Venue, Literal(row["venue_type"])))
-    
-    
-from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
-
-store = SPARQLUpdateStore()
-
-endpoint = 'http://127.0.0.1:9999/blazegraph/sparql'
-
-store.open((endpoint, endpoint))
-
-for triple in my_graph.triples((None, None, None)):
-   store.add(triple)
-    
-store.close()
+    my_graph.add((subj, publisher, Literal(row["publisher"])))
 
