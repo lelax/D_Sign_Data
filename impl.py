@@ -265,7 +265,7 @@ class RelationalDataProcessor(RelationalProcessor):
 
 
 
- class RelationalQueryProcessor(RelationalProcessor):
+class RelationalQueryProcessor(RelationalProcessor):
 
     def __init__(self):
         pass
@@ -369,7 +369,7 @@ class RelationalDataProcessor(RelationalProcessor):
                    AND volume = ? 
                    AND venueId = ? """
         
-        r7 = (queryRel7, con, params=[issue, volume, id])
+        r7 = read_sql(queryRel7, con, params=[issue, volume, id])
 
         return r7
 
