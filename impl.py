@@ -291,7 +291,7 @@ class RelationalQueryProcessor(RelationalProcessor):
 
         self.Id = Id
 
-        with connect(sef.getDbPath) as con:
+        with connect(self.getDbPath) as con:
             con.commit()
 
         queryRel2 = """SELECT * 
@@ -304,7 +304,7 @@ class RelationalQueryProcessor(RelationalProcessor):
 
     def getMostCitedPublication(self):
 
-        with connect(sef.getDbPath) as con:
+        with connect(self.getDbPath) as con:
             con.commit()
 
         queryRel3 = """SELECT TOP 1 title
@@ -318,7 +318,7 @@ class RelationalQueryProcessor(RelationalProcessor):
 
     def getMostCitedVenue(self):
 
-        with connect(sef.getDbPath) as con:
+        with connect(self.getDbPath) as con:
             con.commit()
 
         queryRel4 = """SELECT TOP 1 title
@@ -333,7 +333,7 @@ class RelationalQueryProcessor(RelationalProcessor):
 
     def getVenuesByPublisherId(self, Id):
 
-        with connect(sef.getDbPath) as con:
+        with connect(self.getDbPath) as con:
             con.commit()
 
         queryRel5 = """SELECT *
@@ -346,7 +346,7 @@ class RelationalQueryProcessor(RelationalProcessor):
 
     def getPublicationInVenue(self):
 
-        with connect(sef.getDbPath) as con:
+        with connect(self.getDbPath) as con:
             con.commit()
 
         queryRel6 = """SELECT *
@@ -359,7 +359,7 @@ class RelationalQueryProcessor(RelationalProcessor):
 
     def getJournalArticlesInIssue(self, issue, volume, id):
 
-        with connect(sef.getDbPath) as con:
+        with connect(self.getDbPath) as con:
             con.commit()
 
         queryRel7 = """SELECT * 
@@ -375,7 +375,7 @@ class RelationalQueryProcessor(RelationalProcessor):
 
     def getJournalArticlesInVolume (self, volume, id):
 
-        with connect(sef.getDbPath) as con:
+        with connect(self.getDbPath) as con:
             con.commit()
 
         queryRel8 = """SELECT *
@@ -390,7 +390,7 @@ class RelationalQueryProcessor(RelationalProcessor):
     
     def getJournalArticlesInJournal (self, Id):
 
-        with connect(sef.getDbPath) as con:
+        with connect(self.getDbPath) as con:
             con.commit()
 
 
@@ -404,7 +404,7 @@ class RelationalQueryProcessor(RelationalProcessor):
 
     def getProceedingsByEvent (self, name):
 
-        with connect(sef.getDbPath) as con:
+        with connect(self.getDbPath) as con:
             con.commit()
 
         queryRel10 = """SELECT *
@@ -417,7 +417,7 @@ class RelationalQueryProcessor(RelationalProcessor):
 
     def getPublicationAuthors (self, Id):
 
-        with connect(sef.getDbPath) as con:
+        with connect(self.getDbPath) as con:
             con.commit()
 
         queryRel11 = """SELECT *
@@ -428,7 +428,7 @@ class RelationalQueryProcessor(RelationalProcessor):
 
     def getPublicationsByAuthorName(self, name):
 
-        with connect(sef.getDbPath) as con:
+        with connect(self.getDbPath) as con:
             con.commit()
 
         queryRel12 = """SELECT *
@@ -441,7 +441,7 @@ class RelationalQueryProcessor(RelationalProcessor):
     
     def getDistinctPublishersOfPublications(self, Id):
 
-        with connect(sef.getDbPath) as con:
+        with connect(self.getDbPath) as con:
             con.commit()
 
         queryRel13 = """SELECT DISTINCT *
