@@ -1,3 +1,4 @@
+from multiprocessing import AuthenticationError
 import pandas as pd
 import sqlite3
 from sqlite3 import connect
@@ -11,7 +12,7 @@ from pandas import merge
 from json import dump
 from csv import reader
 
-
+#class for Identifiable Entity
 class IdentifiableEntity(object):
     def __init__(self, id):
         self.id = set()
@@ -43,7 +44,7 @@ class IdentifiableEntity(object):
             result = False
         return result
 
-
+#class for Person
 class Person(IdentifiableEntity):
     def __init__(self, id, givenName, familyName):
         self.givenName = givenName
@@ -65,13 +66,14 @@ class Person(IdentifiableEntity):
     def getfullname(self):
         return self.fullname
 
-
+#class for publication
 class Publication(IdentifiableEntity):
-    def __init__(self, id, publicationYear, title, publicationVenue, author):
+    def __init__(self, id, publicationYear, title, publicationVenue, author, cites):
         self.publicationYear = publicationYear
         self.title = title
         self.publicationVenue = publicationVenue
         self.author = set(author)
+        self.cites = cites
 
         super().__init__(id)
 
@@ -85,18 +87,18 @@ class Publication(IdentifiableEntity):
     def getPublicationVenue(self):
         return self.publicationVenue
 
-    # not sure about this
+    
     def getCitedPublications(self):
         self.id = set()
         for p in Publication:
             self.id.add(p)
 
-    # missing def getAuthors(self):
-    # expected set[Person]
+    def getAuthors(self):
+        self.author = []
+        for p in self.author:
+            self.author.add(p)
 
-
-
-
+#class for journal article
 class JournalArticle(Publication):
     def __init__(self, issue, volume):
         self.issue = issue
@@ -110,7 +112,7 @@ class JournalArticle(Publication):
     def getVolume(self):
         return self.volume
 
-
+#class for book chapter
 class BookChapter(Publication):
     def __init__(self, id, chapterNumber):
         self.chapterNumber = chapterNumber
@@ -123,7 +125,7 @@ class BookChapter(Publication):
 class ProceedingsPaper(Publication):
     pass
 
-
+#class for venue
 class Venue(IdentifiableEntity):
     def __init__(self, id, title, organization):
         self.title = title
@@ -144,7 +146,7 @@ class Journal(Venue):
 class Book(Venue):
     pass
 
-
+#class for proceedings
 class Proceedings(Venue):
     def __init__(self, id, event):
         self.event = event
@@ -153,7 +155,7 @@ class Proceedings(Venue):
     def getEvent(self):
         return self.event
 
-
+#class for organization
 class Organization(IdentifiableEntity):
     def __init__(self, id, name):
         self.name = name
@@ -162,11 +164,11 @@ class Organization(IdentifiableEntity):
     def getName(self):
         return self.name
 
-
+#classes for the processors
 class RelationalProcessor(object):
 
     def __init__(self, dbPath):
-        self.dbPath = dbPath # dbPath: the variable containing the path of the database, initially set as an empty string, that will be updated with the method setDbPath.
+        self.dbPath = "" # dbPath: the variable containing the path of the database, initially set as an empty string, that will be updated with the method setDbPath.
 
     # Methods
     def getDbPath(self):  # it returns the path of the database.
@@ -179,16 +181,18 @@ class RelationalProcessor(object):
 class RelationalDataProcessor(RelationalProcessor):
 
     pass
-
+#methods for upload data either in csv or json
     def uploadData(self, Data):
       self.Data = Data
       if ".json" in Data:
         
         readjson = pd.read_json(Data)
-        readjson['ID'] = readjson.index
-
-        authors = readjson["authors"]
+        readjson['ID'] = readjson.index #the index containing Ids in the json file will be used in the new "ID" column
         
+        authors = readjson["authors"]
+
+        #here we take the existing keys and its values from the authors object from the json file
+        #in order to create the authors table
         authorsTable = pd.DataFrame(authors.get([["orcid","family","given"]]))
         
         venuesIdTable = readjson[["venues_id"]]
@@ -202,7 +206,8 @@ class RelationalDataProcessor(RelationalProcessor):
             venuesIdTable.to_sql("Venues Id", con, if_exists="replace", index=False)
             referencesTable.to_sql("References", con, if_exists="replace", index=False) 
             publishersTable.to_sql("Publishers", con, if_exists="replace", index=False)
-
+        
+        #tables being created and pushed to the database
        
       if ".csv" in Data:
         readcsv = read_csv(Data,
@@ -253,7 +258,7 @@ class RelationalDataProcessor(RelationalProcessor):
         event = publications.query("type == 'event'")
         df_joined = merge(event, publications, left_on="id", right_on="id")
         
-        
+        #tables being pushed to the database
         with connect(self.getDbPath()) as con:
             publications.to_sql("Publications", con, if_exists="replace", index=False)
             journal_articles.to_sql("JournalArticles", con, if_exists="replace", index=False)
@@ -262,9 +267,9 @@ class RelationalDataProcessor(RelationalProcessor):
             books.to_sql("Books", con, if_exists="replace", index=False)
             proceedings.to_sql("Proceedings", con, if_exists="replace", index=False)
             event.to_sql("Event", con, if_exists="replace", index=False)
+       
 
-
-
+#for every method in the relational query processor, the connection with the created database is commited first
 class RelationalQueryProcessor(RelationalProcessor):
 
     def __init__(self):
@@ -453,21 +458,4 @@ class RelationalQueryProcessor(RelationalProcessor):
 
         return r13
 
-
-
-class GenericQueryProcessor(RelationalQueryProcessor):
-
-            def __init__(self, queryProcessor):
-                self.queryProcessor = list()
-                for l in self.queryProcessor:
-                    self.queryProcessor.add(l)
-
-            def cleanQueryProcessors(self):
-                self.queryProcessor = self.queryProcessor.clear()
-
-            def addQueryProcessor(self):
-                self.queryProcessor.add(self)
-
-            def removeDotZero(self):
-                return self.replace(".0","")
 

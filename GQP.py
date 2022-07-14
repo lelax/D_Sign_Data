@@ -1,4 +1,22 @@
-class GenericQueryProcessor():
+from impl import RelationalQueryProcessor, RelationalProcessor
+from graph_01 import TriplestoreQueryProcessor
+
+class GenericQueryProcessor(RelationalQueryProcessor, TriplestoreQueryProcessor):
+
+    def __init__(self, queryProcessor):
+                self.queryProcessor = list()
+                for l in self.queryProcessor:
+                    self.queryProcessor.append(l)
+
+    def cleanQueryProcessors(self):
+        self.queryProcessor = self.queryProcessor.clear()
+
+    def addQueryProcessor(self):
+        self.queryProcessor.add(self)
+
+    def removeDotZero(self):
+        return self.replace(".0","")
+
     qps = []
 
     def addQueryProcessor(qp):
