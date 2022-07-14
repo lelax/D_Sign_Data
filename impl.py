@@ -4,10 +4,12 @@ from sqlite3 import connect
 from pandas import read_csv
 from pandas import Series
 from pandas import read_sql
+from pandas import read_json
+from pandas import DataFrame
 from csv import reader
-from pandasql import sqldf
 from pandas import merge
-
+from json import dump
+from csv import reader
 
 
 class IdentifiableEntity(object):
@@ -161,208 +163,295 @@ class Organization(IdentifiableEntity):
         return self.name
 
 
-class RelationalDataProcessor(object):
-
-    def __init__(self, uploadData):
-            self.uploadData = uploadData
-
-        def uploadData(self, Data):
-            if ".json" in Data:
-                readjson = pd.read_json(Data)
-                readjson.to_sql(self.uploadData(), conn, if_exists='append', index=False)
-            else:
-                readcsv = pd.read_csv(Data)
-                readcsv.to_sql(self.uploadData(), conn, if_exists='append', index=False)
-
-
-
-
 class RelationalProcessor(object):
 
     def __init__(self, dbPath):
-        self.dbPath = self.setDbPath  # dbPath: the variable containing the path of the database, initially set as an empty string, that will be updated with the method setDbPath.
+        self.dbPath = dbPath # dbPath: the variable containing the path of the database, initially set as an empty string, that will be updated with the method setDbPath.
 
     # Methods
     def getDbPath(self):  # it returns the path of the database.
         return self.dbPath
 
     def setDbPath(self):
-        with connect(self.setDbPath) as con:  # it enables to set a new path for the database to handle.
+        with connect(self.dbPath) as con:  # it enables to set a new path for the database to handle.
             con.commit()
 
+class RelationalDataProcessor(RelationalProcessor):
 
-#CREATING TABLES FOR THE RELATIONAL DATABASE
-    venues = read_csv(self.uploadData,
-                      keep_default_na=False,
-                      dtype={
-                       "id": "string",
-                       "name": "string",
-                       "type": "string"
-                      })
+    pass
 
-    venues_ids = venues[["id"]]
-    venue_internal_id = []
+    def uploadData(self, Data):
+      self.Data = Data
+      if ".json" in Data:
+        
+        readjson = pd.read_json(Data)
+        readjson['ID'] = readjson.index
 
-    for idx, row in venues_ids.iterrows():
-        venue_internal_id.append("venue-"+str(idx))
+        authors = readjson["authors"]
+        
+        authorsTable = pd.DataFrame(authors.get([["orcid","family","given"]]))
+        
+        venuesIdTable = readjson[["venues_id"]]
 
-    venues_ids.insert(0, "venueId", Series(venue_internal_id, dtype="string"))
+        referencesTable = readjson[["references"]]
+
+        publishersTable = readjson[["publishers"]]
+
+        with connect(self.getDbPath()) as con:
+            authorsTable.to_sql("Authors", con, if_exists="replace", index=False)
+            venuesIdTable.to_sql("Venues Id", con, if_exists="replace", index=False)
+            referencesTable.to_sql("References", con, if_exists="replace", index=False) 
+            publishersTable.to_sql("Publishers", con, if_exists="replace", index=False)
+
+       
+      if ".csv" in Data:
+        readcsv = read_csv(Data,
+                           keep_default_na=False,
+                           dtype={
+                               "id": "string",
+                               "title": "string",
+                               "type": "string",
+                               "publication_year": "int",
+                               "issue": "string",
+                               "volume": "string",
+                               "chapter": "string",
+                               "publication_venue": "string",
+                               "venue_type": "string",
+                               "publisher": "string",
+                               "event": "string"
+                           })
+        publication_internal_id = []
+        readcsv = DataFrame(readcsv)
+        publications = DataFrame(readcsv)
+
+        for idx, row in publications.iterrows():
+
+            publication_internal_id.append("publication-"+str(idx))
+
+                    
+        #DataFrame for Journals
+        journals = publications.query("type =='journal'")
+        df_joined = merge(journals, publications, left_on="id", right_on="id")
+                
+        #DataFrame for Books
+        books = publications.query("type == 'book'")
+        df_joined = merge(books, publications, left_on="id", right_on="id")
+        
+        #DataFrame for Proceedings
+        proceedings = publications.query("type == 'proceedings'")
+        df_joined = merge(proceedings, publications,left_on="id", right_on="id")
+        
+        #DataFrame for Organization
+        organization = publications.query("type == 'organization'")
+        df_joined = merge(organization, publications, left_on="id", right_on="id")
+        
+        #DataFrame for Journal Articles
+        journal_articles = publications.query("type == 'journal article'")
+        df_joined = merge(journal_articles, publications, left_on="publication_venue", right_on="id")
+
+        #DataFrame for Event
+        event = publications.query("type == 'event'")
+        df_joined = merge(event, publications, left_on="id", right_on="id")
+        
+        
+        with connect(self.getDbPath()) as con:
+            publications.to_sql("Publications", con, if_exists="replace", index=False)
+            journal_articles.to_sql("JournalArticles", con, if_exists="replace", index=False)
+            organization.to_sql("Organization", con, if_exists="replace", index=False)   
+            journals.to_sql("Journals", con, if_exists="replace", index=False)
+            books.to_sql("Books", con, if_exists="replace", index=False)
+            proceedings.to_sql("Proceedings", con, if_exists="replace", index=False)
+            event.to_sql("Event", con, if_exists="replace", index=False)
 
 
-    #Dataframe of Journals
 
-    journals = venues.query("type =='journal'")
-    df_joined = merge(journals, venues_ids, left_on="id", right_on="id")
-    journals = df_joined[["venueId","name"]]
-    journals = journals.rename(columns="venueId": "internalId")
-
-    #DataFrame of Books
-    books = venues.query("type == 'book'")
-    df_joined = merge(books, venues_ids, left_on="id", right_on="id")
-    books = df_joined[["venueId", "name"]]
-    books = books.rename(columns={"venueId": "internalId"})
-
-
-    #DataFrame for proceedings
-
-    proceedings = venues.query("type == 'proceedings'")
-    df_joined = merge(proceedings, venues_ids,left_on="id", right_on="id")
-    proceedings = df_joined[["venueId","name"]]
-    proceedings = proceedings.rename(columns={"venueId": "internalId"})
-
-    #DataFrame for Organization
-
-    organization = venues.query("type == 'organization'")
-    df_joined = merge(organization, venues_ids, left_on="id", right_on="id")
-    organization = df_joined[["venueId","name"]]
-    organization = organization.rename(columns={"venueId": "internalId"})
-
-    #DataFrame for Publications
-
-    publications = read_csv(self.uploadData,
-                            keep_default_na=False,
-                            dtype={
-                                "doi": "string",
-                                "title": "string",
-                                "publication year": "int",
-                                "publication venue": "string",
-                                "type": "string",
-                                "issue": "string",
-                                "volume": "string"
-                            })
-
-    publication_internal_id = []
-    for idx, row in publications.iterrows():
-        publication_internal_id.append("publication-"+str(idx))
-
-    publications.insert(0, "internalId", Series(publication_internal_id, dtype="string"))
-
-    #Data Frame for journal articles
-
-    journal_articles = publications.query("type == 'journal article'")
-    df_joined = merge(journal_articles, venues_ids, left_on="publication venue", right_on="id")
-    journal_articles = df_joined[["internalId", "doi", "publication year", "title", "issue", "volume", "venueId"]]
-    journal_articles = journal_articles.rename(columns={"publication year": "publicationYear", "venueId": "publicationVenue""})
-
-    #DataFrame for BookChapter
-
-    book_chapter = publications.query("type == 'book chapter'")
-    df_joined = merge(book_chapter, venues_ids, left_on="book chapter", right_on="id")
-    book_chapter = df_joined[["internalId", "doi", "publication year", "title", "venueId"]]
-    book_chapter = book_chapter.rename(columns={"publication year": "publicationYear",
-                                                "venueId": "publicationVenue"})
-
-    #DataFrame for ProceedingsPaper
-
-    proceedingsPaper = publications.query("type == 'proceedings paper'")
-    df_joined = merge(proceedingsPaper, venues_ids, left_on="publication venue", right_on="id")
-    proceedingsPaper = df_joined[["internalId", "doi", "title", "venueId"]]
-    proceedingsPaper = proceedingsPaper.rename(columns={"proceedings paper": "proceedingsPaper",
-                                                        "venueId": "proceedingsId"})
-
-    #DataFrame for Person
-
-    person = publications.query("type == 'author'")
-    df_joined = merge(author, venues_ids, left_on="author id", right_on="id")
-    person = df_joined[["internalId", "doi", "ti"]]
-
-    #
- class RelationalQueryProcessor(object):
+ class RelationalQueryProcessor(RelationalProcessor):
 
     def __init__(self):
-        self.RelationalQueryProcessor = RelationalQueryProcessor
+        pass
 
       
     def getPublicationsPublishedInYear(self, Year):
 
-        with connect (self.dbPath) as con:
+        self.Year = Year
 
-         query = """SELECT publicationYear 
-                 FROM Publication WHERE 
-                 publication_year == self.Year"""
+        with connect (self.getDbPath) as con:
+            con.commit()
 
-          publicationYear = read_sql(query, con)
+        queryRel1 = """SELECT * 
+                 FROM Publications WHERE 
+                 publication_year == ?"""
+
+        r1 = read_sql(queryRel1, con, params=[Year])
+
+        return r1
 
 
     def getPublicationsByAuthorId(self, Id):
-        query = """SELECT publication 
+
+        self.Id = Id
+
+        with connect(sef.getDbPath) as con:
+            con.commit()
+
+        queryRel2 = """SELECT * 
                  FROM Publications 
-                 WHERE authorId == Id"""
-        pysqldf(query, connect())
+                 WHERE authorsTable.orcid == ?"""
+
+        r2 = read_sql(queryRel2, con, params=[Id])
+
+        return r2
 
     def getMostCitedPublication(self):
-        query = """SELECT TOP 1 Title
-                   FROM Publication
-                   GROUP BY Title
-                   ORDER BY COUNT(Title) DESC"""
-        pysqldf(query)
+
+        with connect(sef.getDbPath) as con:
+            con.commit()
+
+        queryRel3 = """SELECT TOP 1 title
+                   FROM Publications
+                   GROUP BY title
+                   ORDER BY COUNT(title) DESC"""
+        
+        r3 = read_sql(queryRel3, con)
+
+        return r3
 
     def getMostCitedVenue(self):
-        query = """SELECT TOP 1 Title
-                   FROM Venue
-                   GROUP BY Title
-                   ORDER BY COUNT(Title) DESC"""
 
-    def getVenuesByPublisherId(self, id):
-        query = """SELECT *
-                   FROM Venue
-                   WHERE VenueId == OrganizationId"""
+        with connect(sef.getDbPath) as con:
+            con.commit()
+
+        queryRel4 = """SELECT TOP 1 title
+                   FROM venuesIdTable
+                   GROUP BY title
+                   ORDER BY COUNT(title) DESC"""
+
+        r4 = read_sql(queryRel4, con)
+
+        return r4
+
+
+    def getVenuesByPublisherId(self, Id):
+
+        with connect(sef.getDbPath) as con:
+            con.commit()
+
+        queryRel5 = """SELECT *
+                   FROM venuesIdTable
+                   WHERE publishersTable.id == ?"""
+
+        r5 = read_sql(queryRel5, con)
+
+        return r5
 
     def getPublicationInVenue(self):
-        query = """SELECT *
-                   FROM Publication
-                   WHERE PublicationId == VenueId"""
+
+        with connect(sef.getDbPath) as con:
+            con.commit()
+
+        queryRel6 = """SELECT *
+                   FROM Publications
+                   WHERE Publications.Id == venuesIdTable.id"""
+
+        r6 = read_sql(queryRel6, con)
+
+        return r6
 
     def getJournalArticlesInIssue(self, issue, volume, id):
-        query = """SELECT * 
-                   FROM JournalArticle
-                   WHERE id == JournalArticleId
-                   issue == JournalArticleIssue
-                   volume == JournalArticleVolume"""
 
-    def getJournalArticlesInVolume (self):
-        query = """SELECT *
-                   FROM JournalArticle
-                   WHERE id == JournalArticleId
-                   volume == JournalArticleVolume"""
+        with connect(sef.getDbPath) as con:
+            con.commit()
+
+        queryRel7 = """SELECT * 
+                   FROM journal_articles
+                   LEFT JOIN venuesIdTable ON journal_articles.id == venuesIdTable.publications.Id 
+                   WHERE issue = ? 
+                   AND volume = ? 
+                   AND venueId = ? """
+        
+        r7 = (queryRel7, con, params=[issue, volume, id])
+
+        return r7
+
+    def getJournalArticlesInVolume (self, volume, id):
+
+        with connect(sef.getDbPath) as con:
+            con.commit()
+
+        queryRel8 = """SELECT *
+                   FROM journal_articles
+                   WHERE ? == journal_articles.volume
+                   AND
+                   ? == journal_articles.id"""
+
+        r8 = read_sql(queryRel8, con, params=[volume, id])
+
+        return r8
     
     def getJournalArticlesInJournal (self, Id):
-        query = """SELECT *
-                   FROM JournalArticle
-                   WHERE Id == JournalArticleId"""
 
-        journalArticleInJournal = read_sql(query, con)
+        with connect(sef.getDbPath) as con:
+            con.commit()
 
-    def getProceedingsByEvent (self):
-        query = """SELECT *
+
+        queryRel9 = """SELECT *
+                   FROM journal_articles
+                   WHERE ? == journal_articles.id"""
+
+        r9 = read_sql(queryRel9, con, params=[Id])
+
+        return r9
+
+    def getProceedingsByEvent (self, name):
+
+        with connect(sef.getDbPath) as con:
+            con.commit()
+
+        queryRel10 = """SELECT *
                    FROM Proceedings
-                   WHERE Name in Event"""
+                   WHERE ? in Event"""
 
-    def getPublicationAuthors (self):
+        r10 = read_sql(queryRel10, con, params=[name])
 
-    def getPublicationsByAuthorName(self):
+        return r10
+
+    def getPublicationAuthors (self, Id):
+
+        with connect(sef.getDbPath) as con:
+            con.commit()
+
+        queryRel11 = """SELECT *
+                        FROM Authors
+                        WHERE ? = Authors.id"""
+
+        r11 = read_sql (queryRel11, con, params=[Id])
+
+    def getPublicationsByAuthorName(self, name):
+
+        with connect(sef.getDbPath) as con:
+            con.commit()
+
+        queryRel12 = """SELECT *
+                        FROM Publications
+                        WHERE ? = Authors.given"""
+
+        r12 = read_sql(queryRel12, con, params=[name])
+
+        return r12
     
-    def getDistinctPublishersOfPublications(self):
+    def getDistinctPublishersOfPublications(self, Id):
+
+        with connect(sef.getDbPath) as con:
+            con.commit()
+
+        queryRel13 = """SELECT DISTINCT *
+                        FROM Publishers
+                        LEFT ON Venues Id.id == Publications.id
+                        WHERE ? == Publications.id"""
+
+        r13 = read_sql(queryRel13, con, params=[Id])
+
+        return r13
 
 
 
