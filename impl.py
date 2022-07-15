@@ -232,31 +232,49 @@ class RelationalDataProcessor(RelationalProcessor):
         for idx, row in publications.iterrows():
 
             publication_internal_id.append("publication-"+str(idx))
+        
+        publications.insert(0, "internalId", Series(publication_internal_id, dtype="string"))
 
                     
-        #DataFrame for Journals
+        #Data Frame for Journals
         journals = publications.query("type =='journal'")
         df_joined = merge(journals, publications, left_on="id", right_on="id")
+        journals = df_joined["id", "title"]
                 
-        #DataFrame for Books
+        #Data Frame for Books
         books = publications.query("type == 'book'")
         df_joined = merge(books, publications, left_on="id", right_on="id")
+        books = df_joined["id", "title"]
         
-        #DataFrame for Proceedings
+        #Data Frame for Proceedings
         proceedings = publications.query("type == 'proceedings'")
         df_joined = merge(proceedings, publications,left_on="id", right_on="id")
+        proceedings = df_joined["id", "title", "event"]
         
-        #DataFrame for Organization
+        #Data Frame for Organization
         organization = publications.query("type == 'organization'")
         df_joined = merge(organization, publications, left_on="id", right_on="id")
+        organization = df_joined["id", "title"]
         
-        #DataFrame for Journal Articles
+        #Data Frame for Journal Articles
         journal_articles = publications.query("type == 'journal article'")
         df_joined = merge(journal_articles, publications, left_on="publication_venue", right_on="id")
+        journal_articles = df_joined["id", "publication_year", "issue", "volume"]
 
-        #DataFrame for Event
+        #Data Frame for Event
         event = publications.query("type == 'event'")
         df_joined = merge(event, publications, left_on="id", right_on="id")
+        event = df_joined["id", "title"]
+
+        #Data Frame for Book chapter
+        book_chapter = publications.query("type == 'book chapter'")
+        df_joined = merge(book_chapter, publications, left_on= "publication_venue", right_on="id")
+        book_chapter = df_joined["id", "publication_year", "title", "publication_venue"]
+
+        #Data Frame for Proceedings Paper
+        proceedings_paper = publications.query("type == 'proceedings paper'")
+        df_joined = merge(proceedings_paper, publications,left_on="id", right_on="id")
+        proceedings = df_joined["id", "title", "publication_year", "publication_venue"]
         
         #tables being pushed to the database
         with connect(self.getDbPath()) as con:
@@ -267,6 +285,9 @@ class RelationalDataProcessor(RelationalProcessor):
             books.to_sql("Books", con, if_exists="replace", index=False)
             proceedings.to_sql("Proceedings", con, if_exists="replace", index=False)
             event.to_sql("Event", con, if_exists="replace", index=False)
+            book_chapter.to_sql("Book Chapter", con, if_exists=replace, index=False)
+            proceedings_paper.to_sql("Proceedings Paper", con, if_exists="replace", index=False)
+
        
 
 #for every method in the relational query processor, the connection with the created database is commited first
@@ -301,7 +322,8 @@ class RelationalQueryProcessor(RelationalProcessor):
 
         queryRel2 = """SELECT * 
                  FROM Publications 
-                 WHERE authorsTable.orcid == ?"""
+                 LEFT JOIN authorsTable.orcid ON Publications.id == authorsTable.orcid 
+                 WHERE orcid == ?"""
 
         r2 = read_sql(queryRel2, con, params=[Id])
 
@@ -345,20 +367,21 @@ class RelationalQueryProcessor(RelationalProcessor):
                    FROM venuesIdTable
                    WHERE publishersTable.id == ?"""
 
-        r5 = read_sql(queryRel5, con)
+        r5 = read_sql(queryRel5, con, params=[Id])
 
         return r5
 
-    def getPublicationInVenue(self):
+    def getPublicationInVenue(self, Id):
 
         with connect(self.getDbPath) as con:
             con.commit()
 
         queryRel6 = """SELECT *
                    FROM Publications
-                   WHERE Publications.Id == venuesIdTable.id"""
+                   LEFT JOIN venuesIdTable.id ON Publications.Id == venuesIdTable.id
+                   WHERE venuesIdTable.id == ?"""
 
-        r6 = read_sql(queryRel6, con)
+        r6 = read_sql(queryRel6, con, params=[Id])
 
         return r6
 
