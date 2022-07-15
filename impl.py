@@ -431,6 +431,8 @@ class RelationalQueryProcessor(RelationalProcessor):
 
         r11 = read_sql (queryRel11, con, params=[Id])
 
+        return r11
+
     def getPublicationsByAuthorName(self, name):
 
         with connect(self.getDbPath) as con:
