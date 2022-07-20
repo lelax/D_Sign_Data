@@ -1,4 +1,3 @@
-from csv import reader
 
 class TriplestoreProcessor(object):
     def __init__(self, endpointUrl=""): # the variable containing the URL of the SPARQL endpoint of the triplestore, initially set as an empty string, that will be updated with the method setEndpointUrl
@@ -12,251 +11,205 @@ class TriplestoreProcessor(object):
         self.endpointUrl = newURL
         
 
-class TriplestoreDataProcessor(object):
-    def __init__(self):
-        self.Data = None
+class TriplestoreDataProcessor(TriplestoreProcessor):
+    def __init__(self) -> None: 
+        super().__init__()
 
     # Method:
-    def uploadData(self, Data): # it enables to upload the collection of data specified in the input file path (either in CSV or JSON) into the database.
-        self.Data = Data
-        with open(self.Data, "r", encoding="utf-8") as f:
-            Data = reader(f)
+    def uploadData(self, path): # it enables to upload the collection of data specified in the input file path (either in CSV or JSON) into the database.
+            
+        from rdflib import Graph
 
-from rdflib import Graph
+        my_graph = Graph()
 
-my_graph = Graph()
+        from rdflib import URIRef
 
-from rdflib import URIRef
+        # classes of resources
+        JournalArticle = URIRef("https://schema.org/ScholarlyArticle")
+        BookChapter = URIRef("https://schema.org/Chapter")
+        ProceedingsPaper = URIRef("http://purl.org/spar/fabio/ProceedingsPaper")
+        Journal = URIRef("https://schema.org/Periodical")
+        Book = URIRef("https://schema.org/Book")
+        Proceedings = URIRef("http://purl.org/spar/fabio/AcademicProceedings")
 
-# classes of resources
-JournalArticle = URIRef("https://schema.org/ScholarlyArticle")
-BookChapter = URIRef("https://schema.org/Chapter")
-ProceedingsPaper = URIRef("http://purl.org/spar/fabio/ProceedingsPaper")
-Journal = URIRef("https://schema.org/Periodical")
-Book = URIRef("https://schema.org/Book")
-Proceedings = URIRef("http://purl.org/spar/fabio/AcademicProceedings")
-Publication = URIRef("https://schema.org/publication")
+        # attributes related to classes
+        publicationYear = URIRef("https://schema.org/datePublished")
+        title = URIRef("http://purl.org/dc/terms/title")
+        issue = URIRef("https://schema.org/issueNumber")
+        volume = URIRef("https://schema.org/volumeNumber")
+        doi = URIRef("https://schema.org/identifier")
+        identifier = URIRef("https://schema.org/identifier")
+        name = URIRef("https://schema.org/name")
+        event = URIRef("https://schema.org/Event")
+        chapterNumber = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/URIRef/chapterNumber")
+        givenName = URIRef ("https://schema.org/givenName")
+        familyName = URIRef ("https://schema.org/familyName")
 
-# attributes related to classes
-publicationYear = URIRef("https://schema.org/datePublished")
-title = URIRef("http://purl.org/dc/terms/title")
-issue = URIRef("https://schema.org/issueNumber")
-volume = URIRef("https://schema.org/volumeNumber")
-identifier = URIRef("https://schema.org/identifier")
-name = URIRef("https://schema.org/name")
-event = URIRef("https://schema.org/Event")
-chapterNumber = URIRef("https://github.com/lelax/D_Sign_Data/blob/main/URIRef/chapterNumber")
-givenName = URIRef ("https://schema.org/givenName")
-familyName = URIRef ("https://schema.org/familyName")
+        # relations among classes
+        publicationVenue = URIRef("https://schema.org/isPartOf")
+        publisher = URIRef ("https://schema.org/publishedBy")
+        author = URIRef ("http://purl.org/saws/ontology#isWrittenBy")
+        citation = URIRef ("https://schema.org/citation")
 
-# relations among classes
-publicationVenue = URIRef("https://schema.org/isPartOf")
-publisher = URIRef ("https://schema.org/publishedBy")
-author = URIRef ("http://purl.org/saws/ontology#isWrittenBy")
-cites = URIRef ("https://schema.org/citation")
+        from rdflib import Literal
 
-from rdflib import Literal
-
-a_string = Literal("a string")
-a_number = Literal(42)
-a_boolean = Literal(True)
+        a_string = Literal("a string")
+        a_number = Literal(42)
+        a_boolean = Literal(True)
 
 
-from pandas import read_csv, Series
-from rdflib import RDF
+        from pandas import read_csv, Series
+        from rdflib import RDF
 
-base_url = "https://github.com/lelax/D_Sign_Data"
+        base_url = "https://github.com/lelax/D_Sign_Data"
 
-publications = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
-                 keep_default_na=False,
-                 dtype={
-                     "id": "string",
-                     "title": "string",
-                     "type": "string",
-                     "publication_year": "int",
-                     "publication_venue": "string",
-                     "issue": "string",
-                     "volume": "string",
-                     "chapter": "string",
-                  })
+        if path.split(".")[1]=='csv':
+            publications = read_csv(path, 
+                            keep_default_na=False,
+                            dtype={
+                                "id": "string",
+                                "title": "string",
+                                "type": "string",
+                                "publication_year": "int",
+                                "publication_venue": "string",
+                                "issue": "string",
+                                "volume": "string",
+                                "chapter": "string",
+                                "venue_type": "string",
+                                "publisher": "string",
+                                "event": "string"
+                                })
+            # We are adding information about the publications
+            for idx, row in publications.iterrows():
+                local_id = "publication-" + str(idx)
+                
+                subj = URIRef(base_url + local_id)
 
-for idx, row in publications.iterrows():
-    local_id = "publication-" + str(idx)
-    
-    subj = URIRef(base_url + local_id)
+                if row["type"] == "journal-article":
+                    my_graph.add((subj, RDF.type, JournalArticle))
+                    # These two statements applies only to journal articles
+                    my_graph.add((subj, issue, Literal(row["issue"])))
+                    my_graph.add((subj, volume, Literal(row["volume"])))
+                elif row["type"] == "book-chapter":
+                    my_graph.add((subj, RDF.type, BookChapter))
+                    #This statement applies only to book chapters
+                    my_graph.add((subj, chapterNumber, Literal(row["chapter"])))
+                elif row["type"] == "proceedings-paper": 
+                    my_graph.add((subj, RDF.type, ProceedingsPaper))
+                #other data
+                my_graph.add((subj, title, Literal(row["title"])))
+                my_graph.add((subj, publicationYear, Literal(str(row["publication_year"]))))
+                my_graph.add((subj, identifier, Literal(str(row["id"]))))
 
-    if row["type"] == "journal-article":
-        my_graph.add((subj, RDF.type, JournalArticle))
-        # These two statements applies only to journal articles
-        my_graph.add((subj, issue, Literal(row["issue"])))
-        my_graph.add((subj, volume, Literal(row["volume"])))
-    elif row["type"] == "book-chapter":
-        my_graph.add((subj, RDF.type, BookChapter))
-        #This statement applies only to book chapters
-        my_graph.add((subj, chapterNumber, Literal(row["chapter"])))
-    else: 
-        my_graph.add((subj, RDF.type, ProceedingsPaper))
+            # We are adding information about the publication venues
+            for idx, row in venues.iterrows():
+                local_id = "venues-" + str(idx)
+                
+                subj = URIRef(base_url + local_id)
 
-    my_graph.add((subj, cites, Publication))
-    my_graph.add((subj, title, Literal(row["title"])))
-    my_graph.add((subj, publicationYear, Literal(str(row["publication_year"]))))
-    my_graph.add((subj, publicationVenue, Literal(row["publication_venue"])))
-    my_graph.add((subj, identifier, Literal(str(row["id"]))))
+                venueType = row["venue_type"]
+                if venueType["venue_type"] == "journal":
+                    my_graph.add((subj, RDF.type, Journal))
+                elif venueType["venue_type"] == "book":
+                    my_graph.add((subj, RDF.type, BookChapter))
+                elif:
+                    my_graph.add((subj, RDF.type, Proceedings))
+                    #This statement applies only to proceedings
+                    my_graph.add((subj, event, Literal(row["event"])))
 
+                my_graph.add((subj, publicationVenue, Literal(row["publication_venue"])))
 
+        if path.split(".")[1] == 'json': 
+            with open(path, "r", encoding="utf-8") as f:
+                json_doc = load(f) 
 
-venues = read_csv("../D_Sign_Data-1\import\graph_publications.csv", 
-                 keep_default_na=False,
-                 dtype={
-                     "venue_type": "string",
-                     "publisher": "string",
-                     "event": "string"
-                  })
+            authors_doi = []
+            family_name = []
+            given_name = []
+            orcid = []
 
-for idx, row in venues.iterrows():
-    local_id = "venues-" + str(idx)
-    
-    subj = URIRef(base_url + local_id)
+            for key in authors:
+                for item in authors[key]:
+                    authors_doi.append(key)
+                    family_name.append(item["family"])
+                    given_name.append(item["given"])
+                    orcid.append(item["orcid"])
 
-    if row["venue_type"] == "journal":
-        my_graph.add((subj, RDF.type, Journal))
-    elif row["venue_type"] == "book":
-        my_graph.add((subj, RDF.type, BookChapter))
-    else:
-        my_graph.add((subj, RDF.type, Proceedings))
-        #This statement applies only to proceedings
-        my_graph.add((subj, event, Literal(row["event"])))
+            # Authors dataframe:
+            authors_df = DataFrame({
+                "doi": Series(authors_doi, dtype="string", name="doi"),
+                "family name": Series(family_name, dtype="string", name="family name"),
+                "given name": Series(given_name, dtype="string", name="given name"),
+                "orcid": Series(orcid, dtype="string", name="orcid")
+            })
 
-    my_graph.add((subj, publisher, Literal(row["publisher"])))
+            # Populating the RDF graph with information about the authors
+            authors = {}
+            for idx, row in authors_df.iterrows():
+                if authors.get(row["orcid"], None) == None:
 
- 
-from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+                    local_id = "person-" + str(idx + author_count)
+                    subj = URIRef(base_url + local_id)
+                    authors[row["orcid"]] = subj
 
-store = SPARQLUpdateStore()
+                else:
 
-endpoint = 'http://127.0.0.1:9999/blazegraph/sparql'
+                    subj = author[row["orcid"]]
 
-# It opens the connection with the SPARQL endpoint instance
-store.open((endpoint, endpoint))
-    
-class TriplestoreQueryProcessor(object):
+                my_graph.add((subj, RDF.type, Person))
+                my_graph.add((subj, doi, Literal(row["doi"])))
+                my_graph.add((subj, familyName, Literal(row["family name"])))
+                my_graph.add((subj, givenName, Literal(row["given name"])))
+                my_graph.add((subj, identifier, Literal(row["orcid"])))
 
-    def getPublicationsPublishedInYear(self, year):
-        store.query("""SELECT ?title
-        WHERE {
-        ?s rdf:type schema:ScholarlyArticle  .
-        ?s schema:publication_year "2020"  .
-        ?publication schema:title ?title  .
-    }""")
-        return    
+            references_doi = []
+            references_cites = []
+            for key in references:
+                for item in references[key]:
+                    references_doi.append(key)
+                    references_cites.append(references)
 
-    
-    def getPublicationsByAuthorId(self, author):
-        store.query("""SELECT ?title
-    
-        WHERE {
-        ?s rdf:type schema:ScholarlyArticle  .
-        ?s schema:orcid ?"0000-0001-9857-1511"  .
-        ?publication schema:title ?title  .
-    }""")
-        return
+            # References dataframe:
+            references_df=DataFrame({
+                "references doi": Series(references_doi, dtype="string", name="references doi"),
+                "cites": Series(references_cites, dtype="string", name="cites"),
+            })
 
-    def getMostCitedPublication(self, cites):
-        store.query("""SELECT ?title
-     
-        WHERE {
-        ?s rdf:type schema:ScholarlyArticle  .
-        ?s schema:cites ?cites  .
-            "type": "orderby",
-            "variable": "cites_number",
-    }
-    limit 10""")
-        return
+            # Populating the RDF graph with information about the citations
+            #...
 
-    def getMostCitedVenue(self, venues, cites):
-        store.query("""SELECT ?venue
-     
-        WHERE {
-        ?s rdf:type schema:ScholarlyArticle  .
-        ?s schema:cites ?cites  .
-            "type": "orderby",
-            "variable": "cites_number".
-    }
-    limit 10""")
-        return
+            doi = []
+            issn = []
 
-    def getVenuesByPublisherId(self, venues, publishers):
-        store.query("""SELECT ?publication
-     
-        WHERE {
-        ?s rdf:type schema:?ScholarlyArticle  .
-        ?s schema: venue_id "issn:0944-1344" .
-    }""")
-        return
+            for key in venues_id:
+                for item in venues_id[key]:
+                    doi.append(key)
+                    issn.append(item)
 
-    def getJournalArticlesInIssue(self, issue, volume, identifier):
-        store.query("""SELECT ?JournalArticle
-    
-        WHERE {
-        ?s rdf:type schema:?ScholarlyArticle  .
-        ?s schema: issue 9 .
-        ?s schema: volume 17 .
-        ?s schema: identifier "issn:2164-5515" .
-    }""")
-        return
+            # Venues dataframe:
+            venues_id_df = DataFrame({
+                "doi": Series(doi, dtype="string", name="doi"),
+                "venues_id": Series(issn, dtype="string", name="issn")
+            })
 
-    def getJournalArticlesInVolume(self, volume, identifier):
-        store.query("""SELECT ?JournalArticle
-    
-        WHERE {
-        ?s rdf:type schema:?ScholarlyArticle  .
-        ?s schema: volume 17 .
-        ?s schema: identifier "issn:2164-5515" .
-    }""")
-        return
+            # Populating the RDF graph with information about the venues
+            #...
 
-    def getJournalArticlesInJournal(self, identifier):
-        store.query("""SELECT ?JournalArticle
-        WHERE {
-        ?s rdf:type schema:?ScholarlyArticle  .
-        ?s schema: identifier "issn:2164-5515" .
-    }""")
-        return
+            publishers_crossref = []
+            publishers_id = []
+            publishers_name = []
+            for key in publishers:
+                for item in publishers[key]:
+                    publishers_crossref.append(key)
+                    publishers_id.append(item["id"])
+                    publishers_name.append(item["name"])
 
-    def getProceedingsByEvent(self, event, name):
-        store.query("""SELECT ?Proceedings
-        WHERE {
-        ?s rdf:type purl:?Proceedings  .
-        ?s name contains(?event,"web")  . 
-    }""")
-        return
+            # Publishers dataframe:
+            publishers_df=DataFrame({
+                "crossref": Series(publishers_crossref, dtype="string", name="crossref"),
+                "publishers_id": Series(publishers_id, dtype="string", name="publishers_id")
+                "publishers_name": Series(publishers_name, dtype="string", name="publishers_name")
+            })
 
-    def getPublicationAuthors(self, author, identifier):
-        store.query("""SELECT ?Author
-        WHERE {
-        ?s rdf:type schema:?Person  .
-        ?s schema: identifier "doi:10.1080/21645515.2021.1910000" .
-    }""")
-        return
-
-    def getPublicationsByAuthorName(self, author, name):
-        store.query("""SELECT ?Author
-        WHERE {
-        ?s rdf:type schema:?Person  .
-        ?s schema: filter contains(?name,"doe")  .
-    }""")
-        return  
-
-    def getDistinctPublisherOfPublications(self,publisher, venue, identifier):
-        store.query("""SELECT ?Publisher
-        WHERE {
-        ?s rdf:type schema:?ScholarlyArticle  .
-        ?s schema: Venueid ?"doi:10.1080/21645515.2021.1910000" .
-        &&
-        ?s schema: Venueid ?"doi:10.3390/ijfs9030035" .
-    }""")
-        return 
-
-#close the connection
-store.close()
-    
+            # Populating the RDF graph with information about the venues
+            #...
