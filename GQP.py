@@ -1,110 +1,109 @@
+from pandas import DataFrame
+from pyparsing import null_debug_action
 from impl import RelationalQueryProcessor, RelationalProcessor
 from graph_01 import TriplestoreQueryProcessor
 import pandas as pd
 
-class GenericQueryProcessor(RelationalQueryProcessor, TriplestoreQueryProcessor):
 
-    def __init__(self, queryProcessor, qps):
+
+
+class GenericQueryProcessor(object):
+    def __init__(self):
         self.queryProcessor = list()
-        for l in self.queryProcessor:
-            self.queryProcessor.append(l)
         
-        self.qps = qps = []
 
     def cleanQueryProcessors(self):
         self.queryProcessor = self.queryProcessor.clear()
+        return True
 
     def addQueryProcessor(self):
         self.queryProcessor.add(self)
+        return True
 
-    def removeDotZero(self):
-        return self.replace(".0","")
+  #list of methods
 
-    def addQueryProcessor(self, qp):
-        self.qps.append(qp)
-
-    def getPublicationPublishedinYear(self, qp, year):
+    def getPublicationPublishedinYear(self, year):
         result = []
-        for qp in qps:
-            result.append(qp.getPublicationsPublishedInYear(self,qp, year))
+        for qp in self.queryProcessor:
+            result.append(qp.getPublicationsPublishedInYear(self, year))
         
         return result
    
-    def getPublicationsByAuthorId(self, qp, author):
+    def getPublicationsByAuthorId(self, orcid):
         result = []
-        for qp in self.qps:
-            result.append(qp.getPublicationsByAuthorId(self, qp, author))
+        for qp in self.queryProcessor:
+            result.append(qp.getPublicationsByAuthorId(self, orcid))
         
         return result
        
-    def getMostCitedPublication(self, qp, cites):
+    def getMostCitedPublication(self, cites):
         result = []
-        for qp in self.qps:
-            result.append(qp.getMostCitedPublication(self, qp, cites))
+        for qp in self.queryProcessor:
+            result.append(qp.getMostCitedPublication(self, cites))
         
         return result
     
        
-    def getMostCitedVenue(self, qp, cites):
+    def getMostCitedVenue(self, cites):
         result = []
-        for qp in self.qps:
-            result.append(qp.getMostCitedVenue(self, qp, cites))
+        for qp in self.queryProcessor:
+            result.append(qp.getMostCitedVenue(self, cites))
         
         return result
     
-    def getVenuesByPublisherId(self, qp, venue_id):
+    def getVenuesByPublisherId(self, venue_id):
         result = []
-        for qp in self.qps:
-            result.append(qp.getVenuesByPublisherId(self, qp, venue_id))
+        for qp in self.queryProcessor:
+            result.append(qp.getVenuesByPublisherId(self, venue_id))
         
         return result
     
-    def getJournalArticlesInIssue(self, qp, issue, volume, identifier):
+    def getJournalArticlesInIssue(self, issue, volume, identifier):
         result = []
-        for qp in self.qps:
-            result.append(qp.getJournalArticlesInIssue(self, qp, issue, volume, identifier))
+        for qp in self.queryProcessor:
+            result.append(qp.getJournalArticlesInIssue(self, issue, volume, identifier))
         
         return result
     
-    def getJournalArticlesInVolume(self, qp, volume, identifier):
+    def getJournalArticlesInVolume(self, volume, identifier):
         result = []
-        for qp in self.qps:
-            result.append(qp.getJournalArticlesInVolume(self, qp, volume, identifier))
+        for qp in self.queryProcessor:
+            result.append(qp.getJournalArticlesInVolume(self, volume, identifier))
         
         return result
 
-    def getJournalArticlesInJournal(self, qp, identifier):
+    def getJournalArticlesInJournal(self, identifier):
         result = []
-        for qp in self.qps:
-            result.append(qp.getJournalArticlesInJournal(self, qp, identifier))
+        for qp in self.queryProcessor:
+            result.append(qp.getJournalArticlesInJournal(self, identifier))
         
         return result
     
-    def getProceedingsByEvent(self, qp, event, name):
+    def getProceedingsByEvent(self, event, name):
         result = []
-        for qp in self.qps:
-            result.append(qp.getProceedingsByEvent(self, qp, event, name))
+        for qp in self.queryProcessor:
+            result.append(qp.getProceedingsByEvent(self, event, name))
         
         return result
     
-    def getPublicationAuthors(self, qp, author, identifier):
+    def getPublicationAuthors(self, author, identifier):
         result = []
-        for qp in self.qps:
+        for qp in self.queryProcessors:
             result.append(qp.getPublicationAuthors(self, qp, author, identifier))
         
         return result
 
-    def getPublicationsByAuthorName(self, qp, author, name):
+    def getPublicationsByAuthorName(self, author, name):
         result = []
-        for qp in self.qps:
-            result.append(qp.getPublicationsByAuthorName(self, qp, author, name))
+        for qp in self.queryProcessor:
+            result.append(qp.getPublicationsByAuthorName(self, author, name))
         
         return result
 
-    def getDistinctPublisherOfPublication(self, qp, publisher, venue_id, identifier):
+    def getDistinctPublisherOfPublication(self, publisher, venue_id, identifier):
         result = []
-        for qp in self.qps:
-            result.append(qp.getPublicationsByAuthorName(self, qp, publisher, venue_id, identifier))
+        for qp in self.queryProcessor:
+            result.append(qp.getPublicationsByAuthorName(self, publisher, venue_id, identifier))
         
         return result
     
