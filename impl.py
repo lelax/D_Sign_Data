@@ -1,29 +1,29 @@
-from multiprocessing import AuthenticationError
 import pandas as pd
-import sqlite3
-from sqlite3 import connect
 from pandas import read_csv
-from pandas import Series
-from pandas import read_sql
 from pandas import read_json
-from pandas import DataFrame
-from csv import reader
+from pandas import read_sql
 from pandas import merge
-from json import dump
-from csv import reader
+from pandas import concat
+from pandas import Series
+import sqlite3
+import json
+from sqlite3 import connect
 
-#class for Identifiable Entity
+
+# class for Identifiable Entity
 class IdentifiableEntity(object):
+
     def __init__(self, id):
-        self.id = set()
+        self.id = id
+        self.id_array = set()
         for identifier in id:
-            self.id.add(identifier)
+            self.id_array.add(identifier)
 
     # methods of identifiableEntity
 
     def getIds(self):
         result = []
-        for identifier in self.id:
+        for identifier in self.id_array:
             result.append(identifier)
         result.sort()
         return result
@@ -44,17 +44,14 @@ class IdentifiableEntity(object):
             result = False
         return result
 
-#class for Person
+
+# class for Person
 class Person(IdentifiableEntity):
+
     def __init__(self, id, givenName, familyName):
+        super().__init__(id)
         self.givenName = givenName
         self.familyName = familyName
-        self.fullname = set(self.familyName + self.givenName)
-        self.authorInternalId = []
-        for i in self.authorInternalId:
-            self.authorInternalId.add(i)
-
-        super().__init__(id)
 
     # methods of person
     def getGivenName(self):
@@ -63,17 +60,15 @@ class Person(IdentifiableEntity):
     def getFamilyName(self):
         return self.familyName
 
-    def getfullname(self):
-        return self.fullname
 
-#class for publication
+# class for publication
 class Publication(IdentifiableEntity):
     def __init__(self, id, publicationYear, title, publicationVenue, author, cites):
         self.publicationYear = publicationYear
         self.title = title
         self.publicationVenue = publicationVenue
         self.author = set(author)
-        self.cites = cites
+        self.cites = set(cites)
 
         super().__init__(id)
 
@@ -87,23 +82,27 @@ class Publication(IdentifiableEntity):
     def getPublicationVenue(self):
         return self.publicationVenue
 
-    
     def getCitedPublications(self):
-        self.id = set()
-        for p in Publication:
+        self.cites = []
+        for p in self.cites:
             self.id.add(p)
+
+        return self.cites
 
     def getAuthors(self):
         self.author = []
         for p in self.author:
             self.author.add(p)
 
-#class for journal article
+        return self.author
+
+
+# class for journal article
 class JournalArticle(Publication):
-    def __init__(self, issue, volume):
+    def __init__(self, id, publicationYear, title, publicationVenue, author, cites, issue, volume):
         self.issue = issue
         self.volume = volume
-        super().__init__(issue, volume)
+        super().__init__(id, publicationYear, title, publicationVenue, author, cites)
 
     # methods of journal article
     def getIssue(self):
@@ -112,11 +111,12 @@ class JournalArticle(Publication):
     def getVolume(self):
         return self.volume
 
-#class for book chapter
+
+# class for book chapter
 class BookChapter(Publication):
-    def __init__(self, id, chapterNumber):
+    def __init__(self, id, publicationYear, title, publicationVenue, author, cites, chapterNumber):
         self.chapterNumber = chapterNumber
-        super().__init__(id)
+        super().__init__(id, publicationYear, title, publicationVenue, author, cites)
 
     def getChapterNumber(self):
         return self.chapterNumber
@@ -125,18 +125,19 @@ class BookChapter(Publication):
 class ProceedingsPaper(Publication):
     pass
 
-#class for venue
+
+# class for venue
 class Venue(IdentifiableEntity):
-    def __init__(self, id, title, organization):
+    def __init__(self, id, title, publisher):
         self.title = title
-        self.organization = organization
+        self.publisher = set(publisher)
         super().__init__(id)
 
     def getTitle(self):
         return self.title
 
     def getPublisher(self):
-        return self.organization
+        return self.publisher
 
 
 class Journal(Venue):
@@ -146,16 +147,18 @@ class Journal(Venue):
 class Book(Venue):
     pass
 
-#class for proceedings
+
+# class for proceedings
 class Proceedings(Venue):
-    def __init__(self, id, event):
+    def __init__(self, id, title, publisher, event):
         self.event = event
-        super().__init__(id)
+        super().__init__(id, title, publisher)
 
     def getEvent(self):
         return self.event
 
-#class for organization
+
+# class for organization
 class Organization(IdentifiableEntity):
     def __init__(self, id, name):
         self.name = name
@@ -164,323 +167,1112 @@ class Organization(IdentifiableEntity):
     def getName(self):
         return self.name
 
-#classes for the processors
+
+class QueryProcessor(object):
+    def __init__(self):
+        pass
+
+
+# classes for the processors
 class RelationalProcessor(object):
 
-    def __init__(self, dbPath):
-        self.dbPath = "" # dbPath: the variable containing the path of the database, initially set as an empty string, that will be updated with the method setDbPath.
+    def __init__(self):
+        self.dbPath = ''  # dbPath: the variable containing the path of the database,
+        # initially set as an empty string, that will be updated with the method setDbPath.
 
     # Methods
     def getDbPath(self):  # it returns the path of the database.
         return self.dbPath
 
-    def setDbPath(self):
-        with connect(self.dbPath) as con:  # it enables to set a new path for the database to handle.
-            con.commit()
+    def setDbPath(self, path):
+        self.dbPath = path
+
 
 class RelationalDataProcessor(RelationalProcessor):
 
-    pass
-#methods for upload data either in csv or json
-    def uploadData(self, Data):
-      self.Data = Data
-      if ".json" in Data:
-        
-        readjson = pd.read_json(Data)
-        readjson['ID'] = readjson.index #the index containing Ids in the json file will be used in the new "ID" column
-        
-        authors = readjson["authors"]
+    def __init__(self):
+        super().__init__()
 
-        #here we take the existing keys and its values from the authors object from the json file
-        #in order to create the authors table
-        authorsTable = pd.DataFrame(authors.get([["orcid","family","given"]]))
-        
-        venuesIdTable = readjson[["venues_id"]]
+    def uploadData(self, path): #method for uploading data. Here, in case the file is not a csv nor a json
+        self.path = path        #an exception should be raised
+        result = True
 
-        referencesTable = readjson[["references"]]
+        while True:
+            try:
 
-        publishersTable = readjson[["publishers"]]
+                if self.path.endswith('csv'):
+                    with open(path, "r", encoding="utf-8") as file:
+                        publications = pd.read_csv(file, keep_default_na=False,
+                                                   dtype={
+                                                       "id": "string",
+                                                       "title": "string",
+                                                       "type": "string",
+                                                       "publication_year": "int",
+                                                       "issue": "string",
+                                                       "volume": "string",
+                                                       "chapter": "string",
+                                                       "publication_venue": "string",
+                                                       "venue_type": "string",
+                                                       "publisher": "string",
+                                                       "event": "string"
+                                                   })
+                        #creating empty data frames to be populated with the information coming from csv file
+                        journal_article = pd.DataFrame({
+                            "internalId", "issue", "volume", "publication_year", "title", "publication_venue", "id"})
 
-        with connect(self.getDbPath()) as con:
-            authorsTable.to_sql("Authors", con, if_exists="replace", index=False)
-            venuesIdTable.to_sql("Venues Id", con, if_exists="replace", index=False)
-            referencesTable.to_sql("References", con, if_exists="replace", index=False) 
-            publishersTable.to_sql("Publishers", con, if_exists="replace", index=False)
-        
-        #tables being created and pushed to the database
-       
-      if ".csv" in Data:
-        readcsv = read_csv(Data,
-                           keep_default_na=False,
-                           dtype={
-                               "id": "string",
-                               "title": "string",
-                               "type": "string",
-                               "publication_year": "int",
-                               "issue": "string",
-                               "volume": "string",
-                               "chapter": "string",
-                               "publication_venue": "string",
-                               "venue_type": "string",
-                               "publisher": "string",
-                               "event": "string"
-                           })
-        publication_internal_id = []
-        readcsv = DataFrame(readcsv)
-        publications = DataFrame(readcsv)
+                        book_chapter = pd.DataFrame({
+                            "internalId", "chapter_number", "publication_year", "title", "publication_venue", "id"})
 
-        for idx, row in publications.iterrows():
+                        journal = pd.DataFrame({
+                            "internalId", "doi", "title", "publisher"})
 
-            publication_internal_id.append("publication-"+str(idx))
-        
-        publications.insert(0, "internalId", Series(publication_internal_id, dtype="string"))
+                        book = pd.DataFrame({
+                            "internalId", "doi", "title", "publisher"})
 
-                    
-        #Data Frame for Journals
-        journals = publications.query("type =='journal'")
-        df_joined = merge(journals, publications, left_on="id", right_on="id")
-        journals = df_joined["id", "title"]
-                
-        #Data Frame for Books
-        books = publications.query("type == 'book'")
-        df_joined = merge(books, publications, left_on="id", right_on="id")
-        books = df_joined["id", "title"]
-        
-        #Data Frame for Proceedings
-        proceedings = publications.query("type == 'proceedings'")
-        df_joined = merge(proceedings, publications,left_on="id", right_on="id")
-        proceedings = df_joined["id", "title", "event"]
-        
-        #Data Frame for Organization
-        organization = publications.query("type == 'organization'")
-        df_joined = merge(organization, publications, left_on="id", right_on="id")
-        organization = df_joined["id", "title"]
-        
-        #Data Frame for Journal Articles
-        journal_articles = publications.query("type == 'journal article'")
-        df_joined = merge(journal_articles, publications, left_on="publication_venue", right_on="id")
-        journal_articles = df_joined["id", "publication_year", "issue", "volume"]
+                        proceedings_paper = pd.DataFrame(
+                            {'internalId', 'doi', 'title', 'publication_year', 'publication_venue'})
 
-        #Data Frame for Event
-        event = publications.query("type == 'event'")
-        df_joined = merge(event, publications, left_on="id", right_on="id")
-        event = df_joined["id", "title"]
+                        proceedings = pd.DataFrame({
+                            "internalId", "title", "event", "id", "publisher"})
 
-        #Data Frame for Book chapter
-        book_chapter = publications.query("type == 'book chapter'")
-        df_joined = merge(book_chapter, publications, left_on= "publication_venue", right_on="id")
-        book_chapter = df_joined["id", "publication_year", "title", "publication_venue"]
+                        publications = publications.drop_duplicates()
 
-        #Data Frame for Proceedings Paper
-        proceedings_paper = publications.query("type == 'proceedings paper'")
-        df_joined = merge(proceedings_paper, publications,left_on="id", right_on="id")
-        proceedings = df_joined["id", "title", "publication_year", "publication_venue"]
-        
-        #tables being pushed to the database
-        with connect(self.getDbPath()) as con:
-            publications.to_sql("Publications", con, if_exists="replace", index=False)
-            journal_articles.to_sql("JournalArticles", con, if_exists="replace", index=False)
-            organization.to_sql("Organization", con, if_exists="replace", index=False)   
-            journals.to_sql("Journals", con, if_exists="replace", index=False)
-            books.to_sql("Books", con, if_exists="replace", index=False)
-            proceedings.to_sql("Proceedings", con, if_exists="replace", index=False)
-            event.to_sql("Event", con, if_exists="replace", index=False)
-            book_chapter.to_sql("Book Chapter", con, if_exists=replace, index=False)
-            proceedings_paper.to_sql("Proceedings Paper", con, if_exists="replace", index=False)
+                        pub_ids = pd.DataFrame(publications['id'])
+                        #creating internal Ids
+                        publications_internal_id = []
 
-       
+                        for idx, row in pub_ids.iterrows():
+                            publications_internal_id.append("publications-" + str(idx))
 
-#for every method in the relational query processor, the connection with the created database is commited first
-class RelationalQueryProcessor(RelationalProcessor):
+                        publications['internalId'] = pd.Series(publications_internal_id)
+
+                        # Data Frame for publications
+
+                        publications_df = pd.DataFrame(
+                            {'internalId', 'doi', 'title', 'publication_year', 'publication_venue', 'publisher'})
+                        publications_df['internalId'] = publications['internalId']
+                        publications_df['doi'] = publications['id'].astype('str')
+                        publications_df['title'] = publications['title'].astype('str')
+                        publications_df['type'] = publications['type'].astype('str')
+                        publications_df['publication_year'] = publications['publication_year'].astype('int')
+                        publications_df['publication_venue'] = publications['publication_venue'].astype('str')
+                        publications_df['publisher'] = publications['publisher'].astype('str')
+
+                        # Data Frame for journal article
+
+                        journal_article['internalId'] = publications[publications['type'] == "journal-article"][
+                            'internalId'].astype('str')
+                        journal_article['doi'] = publications[publications['type'] == "journal-article"]['id'].astype(
+                            'str')
+                        journal_article['issue'] = publications[publications['type'] == "journal-article"][
+                            'issue'].astype('str')
+                        journal_article['volume'] = publications[publications['type'] == "journal-article"][
+                            'volume'].astype('str')
+                        journal_article['publication_year'] = publications[publications['type'] == "journal-article"][
+                            'publication_year'].astype('str')
+                        journal_article['publication_venue'] = publications[publications['type'] == "journal-article"][
+                            'publication_venue'].astype('str')
+                        journal_article['title'] = publications[publications['type'] == "journal-article"][
+                            'title'].astype('str')
+
+                        # Data Frame for Journal
+
+                        journal['internalId'] = publications[publications['venue_type'] == "journal"][
+                            'internalId'].astype('str')
+                        journal['doi'] = publications[publications['venue_type'] == "journal"]['id'].astype(
+                            'str')
+                        journal['title'] = publications[publications['venue_type'] == "journal"][
+                            'issue'].astype('str')
+                        journal['publisher'] = publications[publications['venue_type'] == "journal"][
+                            'volume'].astype('str')
+
+                        # Data Frame for book chapter
+
+                        book_chapter['internalId'] = publications[publications['type'] == "book-chapter"][
+                            'internalId'].astype('str')
+                        book_chapter['doi'] = publications[publications['type'] == "book-chapter"]['id'].astype('str')
+                        book_chapter['chapter'] = publications[publications['type'] == "book-chapter"][
+                            'chapter'].astype('str')
+                        book_chapter['publication_year'] = publications[publications['type'] == "book-chapter"][
+                            'publication_year'].astype('str')
+                        book_chapter['publication_venue'] = publications[publications['type'] == "book-chapter"][
+                            'publication_venue'].astype('str')
+                        book_chapter['title'] = publications[publications['type'] == "book-chapter"][
+                            'title'].astype('str')
+
+                        # Data Frame for book
+
+                        book['internalId'] = publications[publications['venue_type'] == "book"][
+                            'internalId'].astype('str')
+                        book['doi'] = publications[publications['venue_type'] == "book"]['id'].astype(
+                            'str')
+                        book['title'] = publications[publications['venue_type'] == "book"][
+                            'issue'].astype('str')
+                        book['publisher'] = publications[publications['venue_type'] == "book"][
+                            'volume'].astype('str')
+
+                        # Data Frame for Proceedings
+
+                        proceedings_paper['internalId'] = publications['internalId'].astype('str')
+                        proceedings_paper['doi'] = publications['id'].astype('str')
+                        proceedings_paper['title'] = publications['title'].astype('str')
+                        proceedings_paper['publisher'] = publications['publisher'].astype('str')
+                        proceedings_paper['event'] = publications['event'].astype('str')
+                        proceedings_paper['publication_venue'] = publications['publication_venue'].astype('str')
+                        proceedings_paper['publication_year'] = publications['publication_year'].astype('str')
+
+                        # Data Frame for Proceedings Paper
+
+                        proceedings['internalId'] = publications['internalId'].astype('str')
+                        proceedings['doi'] = publications['id'].astype('str')
+                        proceedings['title'] = publications['title'].astype('str')
+                        proceedings['publisher'] = publications['publisher'].astype('str')
+                        proceedings['event'] = publications['event'].astype('str')
+                        proceedings['publication_venue'] = publications['publication_venue'].astype('str')
+
+                    with connect(self.dbPath) as con:
+                        publications_df.to_sql("Publications", con, if_exists="append", index=False)
+                        journal_article.to_sql("JournalArticle", con, if_exists="append", index=False)
+                        book_chapter.to_sql("BookChapter", con, if_exists="append", index=False)
+                        journal.to_sql("Journal", con, if_exists="append", index=False)
+                        book.to_sql("Book", con, if_exists="append", index=False)
+                        proceedings_paper.to_sql("ProceedingsPaper", con, if_exists="append", index=False)
+                        proceedings.to_sql("Proceedings", con, if_exists="append", index=False)
+
+                    con.commit()
+
+                elif self.path.endswith('.json'):
+
+                    with open(path, "r", encoding="utf-8") as file:
+                        venue = json.load(file)
+
+                        # DataFrame for authors being populated
+                        authors_df = pd.DataFrame({
+                            "doi_authors": pd.Series(dtype="str"),
+                            "family": pd.Series(dtype="str"),
+                            "given": pd.Series(dtype="str"),
+                            "orcid": pd.Series(dtype="str")
+                        })
+
+                        family = []
+                        given = []
+                        orcid = []
+                        doi_authors = []
+
+                        authors = venue['authors']
+                        for key in authors:
+                            for value in authors[key]:
+                                doi_authors.append(key)
+                                family.append(value['family'])
+                                given.append(value['given'])
+                                orcid.append(value['orcid'])
+
+                        authors_df['doi_authors'] = doi_authors
+                        authors_df['family'] = family
+                        authors_df['given'] = given
+                        authors_df['orcid'] = orcid
+                        authors_df = authors_df.drop_duplicates()
+
+                        # Data Frame for internal ID Venue
+
+                        venues_id_df = pd.DataFrame({
+                            "doi_venues_id": pd.Series(dtype="str"),
+                            "issn_isbn": pd.Series(dtype="str"),
+                        })
+                        doi_venues_id = []
+                        issn_isbn = []
+
+                        venues_id = venue["venues_id"]
+                        for key in venues_id:
+                            for value in venues_id[key]:
+                                doi_venues_id.append(key)
+                                issn_isbn.append(value)
+
+                        venues_id_df["doi_venues_id"] = doi_venues_id
+                        venues_id_df["issn_isbn"] = pd.Series(issn_isbn)
+
+                        venues_id_df = venues_id_df.drop_duplicates()
+
+                        venue_int = []
+                        for idx, row in venues_id_df.iterrows():
+                            venue_int.append("venue-" + str(idx))
+
+                        venues_id_df["internalId"] = venue_int
+
+                        # Data Frame for references
+                        references_df = pd.DataFrame({
+                            "idCited": pd.Series(dtype="str"),
+                            "idCites": pd.Series(dtype="str"),
+                            "no": pd.Series(dtype="int64")
+                        })
+
+                        id_ref = []
+                        id_ref_doi = []
+
+                        references = venue["references"]
+
+                        for key in references:
+                            for value in references[key]:
+                                id_ref.append(key)
+                                id_ref_doi.append(value)
+
+                        references_df["idCited"] = id_ref
+                        references_df["idCites"] = id_ref_doi
+                        references_df["no"] = references_df.index
+
+                        references_df = references_df.drop_duplicates()
+
+                        # Data Frame for publishers
+
+                        publishers_df = pd.DataFrame({
+                            "id_pub": pd.Series(dtype="str"),
+                            "name": pd.Series(dtype="str")
+                        })
+
+                        doi_pub = []
+                        name = []
+                        id_pub = []
+
+                        publishers = venue["publishers"]
+
+                        for key in publishers:
+                            for value in publishers[key]:
+                                doi_pub.append(key)
+                                id_pub.append(publishers[key]["id"])
+                                name.append(publishers[key]["name"])
+
+                        publishers_df["doi"] = doi_pub
+                        publishers_df["id_pub"] = id_pub
+                        publishers_df["name"] = name
+                        publishers_df["doi_venue"] = venues_id_df["doi_venues_id"]
+                        publishers_df = publishers_df.drop_duplicates()
+
+                        publishers_df["internalId"] = venues_id_df['internalId']
+
+                        authors_df["internalId"] = venues_id_df['internalId']
+
+                        references_df["internalId"] = venues_id_df['internalId']
+
+                        # Creating the tables into the database
+
+                    with connect(self.dbPath) as con:
+
+                        authors_df.to_sql("Authors", con, if_exists="append", index=False)
+                        venues_id_df.to_sql("Venues", con, if_exists="append", index=False)
+                        references_df.to_sql("ReferencesTable", con, if_exists="append", index=False)
+                        publishers_df.to_sql("Publishers", con, if_exists="append", index=False)
+
+                    con.commit()
+
+                else:
+                    result = False
+
+            except ValueError:
+                print("Oops! This doesn't seem a valid file.")
+                result = False
+
+            return result
+
+
+class RelationalQueryProcessor(RelationalProcessor, QueryProcessor):
 
     def __init__(self):
-        pass
+        super().__init__()
+        self.id = None
+        self.year = None
 
-      
-    def getPublicationsPublishedInYear(self, Year):
+    def getPublicationsPublishedInYear(self, year):
+        self.year = year
 
-        self.Year = Year
+        with connect(self.getDbPath()) as con:
+            query = """SELECT Publications.title, Publications.publication_venue,Publications.publication_year, Publications.type,
+                            Publishers.name, Authors.orcid, Authors.given, Authors.family, Authors.doi_authors, 
+                            JournalArticle.issue, JournalArticle.volume, BookChapter.chapter, ReferencesTable.idCites
+                            FROM Publications
+                            LEFT JOIN Authors ON Publications.doi == Authors.doi_authors
+                            LEFT JOIN ReferencesTable ON Publications.doi == ReferencesTable.idCited
+                            LEFT JOIN JournalArticle ON Publications.doi == JournalArticle.doi
+                            LEFT JOIN BookChapter ON Publications.doi == BookChapter.doi
+                            LEFT JOIN Publishers ON Publishers.doi == Publications.doi
+                            WHERE Publications.publication_year ==  '{0}';""".format(year)
 
-        with connect (self.getDbPath) as con:
-            con.commit()
+            result = read_sql(query, con)
 
-        queryRel1 = """SELECT * 
-                 FROM Publications WHERE 
-                 publication_year == ?"""
+        return result
 
-        r1 = read_sql(queryRel1, con, params=[Year])
+    def getPublicationsByAuthorId(self, id):
+        self.id = id
+        with connect(self.getDbPath()) as con:
+            query = """SELECT Authors.orcid, Authors.given, Authors.family,  Publications.title, Authors.doi_authors, 
+                Publications.publication_venue, Publishers.name, Publications.publication_year, JournalArticle.issue,
+                JournalArticle.volume, BookChapter.chapter, Publications.type, ReferencesTable.idCites
+                FROM Publications
+                LEFT JOIN Authors ON Publications.doi == Authors.doi_authors
+                LEFT JOIN JournalArticle ON Publications.doi == JournalArticle.doi
+                LEFT JOIN ReferencesTable ON Publications.doi == ReferencesTable.idCited
+                LEFT JOIN BookChapter ON Publications.doi == BookChapter.doi
+                LEFT JOIN Publishers ON Publishers.doi == Publications.doi
+                WHERE Authors.orcid = '{0}'""".format(id)
 
-        return r1
+            result = read_sql(query, con)
 
-
-    def getPublicationsByAuthorId(self, Id):
-
-        self.Id = Id
-
-        with connect(self.getDbPath) as con:
-            con.commit()
-
-        queryRel2 = """SELECT * 
-                 FROM Publications 
-                 LEFT JOIN authorsTable.orcid ON Publications.id == authorsTable.orcid 
-                 WHERE orcid == ?"""
-
-        r2 = read_sql(queryRel2, con, params=[Id])
-
-        return r2
+        return result
 
     def getMostCitedPublication(self):
+        with connect(self.getDbPath()) as con:
+            query = """SELECT Authors.orcid, Authors.given, Authors.family,  Publications.title, Authors.doi_authors, 
+            Publications.publication_venue, Publishers.name, Publications.publication_year, 
+            JournalArticle.issue, JournalArticle.volume, BookChapter.chapter, Publications.type
+            FROM (SELECT ReferencesTable.idCited, COUNT (ReferencesTable.no) AS Ocurrence
+            FROM ReferencesTable
+            GROUP BY ReferencesTable.idCited
+            ORDER BY Ocurrence DESC
+            LIMIT 1)
+            LEFT JOIN Publications ON Publications.doi == idCited
+            LEFT JOIN JournalArticle ON Publications.doi == JournalArticle.doi
+            LEFT JOIN BookChapter ON Publications.doi == BookChapter.doi
+            LEFT JOIN Authors ON Publications.doi == Authors.doi_authors
+            LEFT JOIN Publishers ON Publishers.doi == Publications.doi"""
+            result = read_sql(query, con)
 
-        with connect(self.getDbPath) as con:
-            con.commit()
+            return result
 
-        queryRel3 = """SELECT TOP 1 title
-                   FROM Publications
-                   GROUP BY title
-                   ORDER BY COUNT(title) DESC"""
-        
-        r3 = read_sql(queryRel3, con)
+    def getMostCitedVenue(self):
+        with connect(self.getDbPath()) as con:
+            query = """ 
+            SELECT Publications.publication_venue, Venues.doi_venues_id, Publishers.name, Publications.title 
+            FROM 
+                (SELECT ReferencesTable."idCited", COUNT(ReferencesTable.no) as Ocurrence
+                FROM ReferencesTable
+                GROUP BY ReferencesTable."idCited"
+                ORDER BY Ocurrence DESC
+                LIMIT 1)
+            LEFT JOIN Publishers ON "idCited" == Publishers.id_pub 
+            LEFT JOIN Venues ON "idCited" == Venues.doi_venues_id
+            LEFT JOIN Publications ON "idCited" == Publications.doi"""
 
-        return r3
+            result = read_sql(query, con)
+
+    def getVenuesByPublisherId(self, id):
+        with connect(self.getDbPath()) as con:
+            query = """SELECT  Publications.title, Venues.doi_venues_id, Publications.publication_venue, 
+            Publishers.name, Publishers.id_pub, Publications.publication_year 
+            FROM Publications 
+            LEFT JOIN Publishers ON Publishers.doi == Publications.doi 
+            LEFT JOIN Venues ON Venues.doi_venues_id == Publications.doi WHERE Publishers.doi = '{0}';""".format(id)
+
+            result = read_sql(query, con)
+
+        return result
+
+    def getPublicationInVenue(self, id):
+        with connect(self.getDbPath()) as con:
+            query = """SELECT Authors.orcid, Authors.given, Authors.family,  Publications.title, Authors.doi_authors, 
+                       Publications.publication_venue, Publications.publication_year, JournalArticle.issue, JournalArticle.volume, 
+                       BookChapter.chapter, Publications.type 
+                       FROM Publications 
+                       LEFT JOIN Authors ON Publications.doi == Authors.doi_authors 
+                       LEFT JOIN JournalArticle ON Publications.doi == JournalArticle.doi 
+                       LEFT JOIN BookChapter ON Publications.doi == BookChapter.doi 
+                       LEFT JOIN Publishers ON Publishers.doi == Publications.doi LEFT JOIN Venues 
+                       ON Venues.doi_venues_id == Publications.doi WHERE Venues.doi_venues_id like '{0}';""".format(id)
+
+            result = read_sql(query, con)
+
+        return result
+
+    def getJournalArticlesInIssue(self, issue, volume, journalId):
+        with connect(self.getDbPath()) as con:
+            query = """SELECT Authors.orcid, Authors.given, Authors.family,  Publications.title, Authors.doi_authors, 
+                        Publications.publication_venue, JournalArticle.issue, JournalArticle.volume, Publishers.name, 
+                        Publications.publication_year 
+                        FROM Publications 
+                        LEFT JOIN Authors ON Publications.doi == Authors.doi_authors 
+                        LEFT JOIN Publishers ON Publishers.doi == Publications.doi 
+                        LEFT JOIN Venues ON Venues.doi_venues_id == Publications.doi 
+                        LEFT JOIN JournalArticle ON JournalArticle.doi == Publications.doi 
+                        WHERE  JournalArticle.issue = '{0}' AND JournalArticle.volume = '{1}' AND Venues.doi_venues_id = '{2}';""".format(
+                issue, volume, journalId)
+
+            result = read_sql(query, con)
+
+        return result
+
+    def getJournalArticlesInVolume(self, volume, journalId):
+        with connect(self.getDbPath()) as con:
+            query = """ SELECT Authors.orcid, Authors.given, Authors.family,  Publications.title, Authors.doi_authors, 
+                        Publications.publication_venue, JournalArticle.issue, JournalArticle.volume, 
+                        Publishers.name, Publications.publication_year
+                        FROM Publications
+                        LEFT JOIN Authors ON Publications.doi == Authors.doi_authors
+                        LEFT JOIN Publishers ON Publishers.doi == Publications.doi
+                        LEFT JOIN Venues ON Venues.doi_venues_id == Publications.doi
+                        LEFT JOIN JournalArticle ON JournalArticle.doi == Publications.doi
+                        WHERE JournalArticle.volume = '{0}' AND Venues.doi_venues_id = '{1}';""".format(volume,
+                                                                                                        journalId)
+
+            result = read_sql(query, con)
+
+        return result
+
+    def getJournalArticlesInJournal(self, journalId):
+        with connect(self.getDbPath()) as con:
+            query = """SELECT Authors.orcid, Authors.given, Authors.family,  Publications.title, Authors.doi_authors, 
+                        Publications.publication_venue, JournalArticle.issue, JournalArticle.volume, Publishers.name, 
+                        Publications.publication_year 
+                        FROM Publications
+                        LEFT JOIN Authors ON Publications.doi == Authors.doi_authors 
+                        LEFT JOIN Publishers ON Publishers.doi == Publications.doi 
+                        LEFT JOIN Venues ON Venues.doi_venues_id == Publications.doi 
+                        LEFT JOIN JournalArticle ON JournalArticle.doi == Publications.doi 
+                        WHERE Venues.doi_venues_id = '{0}';""".format(journalId)
+
+            result = read_sql(query, con)
+
+        return result
+
+    def getProceedingsByEvent(self, name):
+        with connect(self.getDbPath()) as con:
+            query = """SELECT Proceedings.doi, Proceedings.title, Proceedings.publication_venue , Venues.doi_venues_id, Proceedings.publisher, Proceedings.event
+            FROM Proceedings 
+            LEFT JOIN Venues ON Venues.doi_venues_id == Proceedings.doi
+            WHERE Proceedings.event COLLATE SQL_Latin1_General_CP1_CI_AS LIKE '%{0}%' """.format(name)
+
+            result = read_sql(query, con)
+
+        return result
+
+    def getPublicationAuthors(self, publicationId):
+        with connect(self.getDbPath()) as con:
+            query = """SELECT orcid, given, family
+            FROM Authors
+            WHERE doi_authors = '{0}';""".format(publicationId)
+
+            result = read_sql(query, con)
+
+        return result
+
+    def getPublicationsByAuthorsName(self, name):
+        with connect(self.getDbPath()) as con:
+            query = """SELECT Authors.orcid, Authors.given, Authors.family,  Publications.title, Authors.doi_authors, 
+            Publications.publication_venue, Publishers.name, Publications.publication_year, JournalArticle.issue, 
+            JournalArticle.volume, BookChapter.chapter, Publications.type 
+            FROM Publications LEFT JOIN Authors ON 
+            Publications.doi == Authors.doi_authors LEFT JOIN JournalArticle ON Publications.doi == 
+            JournalArticle.doi LEFT JOIN BookChapter ON Publications.doi == BookChapter.doi LEFT JOIN Publishers ON 
+            Publishers.doi == Publications.doi LEFT JOIN Venues ON Venues.doi_venues_id == Publications.doi WHERE 
+            family COLLATE SQL_Latin1_General_CP1_CI_AS LIKE '%{0}%' OR given COLLATE SQL_Latin1_General_CP1_CI_AS 
+            LIKE '%{0}%';""".format(name)
+
+            result = read_sql(query, con)
+
+        return result
+
+    def getDistinctPublishersOfPublications(self, pubIdList):
+        with connect(self.getDbPath()) as con:
+            publisherId = pd.DataFrame()
+            for el in pubIdList:
+                query = """"SELECT Publishers.doi, Publishers.name, Publishers.doi_venues_id
+                            FROM Publishers
+                            LEFT JOIN Publications ON Publications.doi == Publishers.doi_venues_id
+                            WHERE Publishers.doi_venues_id = '{0}';""".format(el)
+
+                result = read_sql(query, con)
+                publisherId = pd.concat([publisherId, result])
+
+        return publisherId
+
+
+class GenericQueryProcessor(object):
+    def __init__(self):
+        self.queryProcessor = list()
+
+    def cleanQueryProcessors(self):
+        self.queryProcessor = self.queryProcessor.clear()
+        return True
+
+    def addQueryProcessor(self, qp):
+        self.queryProcessor.append(qp)
+        return True
+
+    def removeDotZero(self, s):
+
+        if type(s) == int:
+            return s.replace(".0", "")
+        else:
+            return s
+
+    # list of methods
+
+    def getPublicationsPublishedInYear(self, year):
+        pub_obj = []
+        column_names = ['title', 'publication_venue', 'publication_year', 'type', 'name', 'orcid', 'given', 'family',
+                        'doi_authors', 'issue', 'volume', 'chapter', 'idCites']
+
+        df_empty = pd.DataFrame(columns=column_names)
+
+        for df in self.queryProcessor:
+            current = df.getPublicationsPublishedInYear(year)
+            current.columns = ['title', 'publication_venue', 'publication_year', 'type', 'name', 'orcid', 'given',
+                               'family', 'doi_authors', 'issue', 'volume', 'chapter', 'idCites']
+            current["issue"] = current["issue"].astype("string")
+            current["volume"] = current["volume"].astype("string")
+            current = current.fillna("NA")
+            df_empty = concat([df_empty, current], ignore_index=True)
+
+
+            doi_l = []
+            publicationYear_l = []
+            title_l = []
+            publicationVenue_l = []
+            author_l = []
+            cites_l = []
+
+            for i in df_empty['doi_authors']:
+                doi_l.append(i)
+
+            for i in df_empty['publication_year']:
+                publicationYear_l.append(i)
+
+            for i in df_empty['title']:
+                title_l.append(i)
+
+            for i in df_empty['publication_venue']:
+                publicationVenue_l.append(i)
+
+            for i in df_empty['given']:
+                author_l.append(i)
+
+            for i in df_empty['idCites']:
+                cites_l.append(i)
+
+            pub_obj = Publication(doi_l, publicationYear_l, title_l, publicationVenue_l, author_l, cites_l)
+
+        return pub_obj
+
+    def getPublicationsByAuthorId(self, id):
+        column_names = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue', 'name',
+                        'publication_year', 'issue', 'volume', 'chapter', 'type', 'idCites']
+
+        df_empty = pd.DataFrame(columns=column_names)
+
+        for df in self.queryProcessor:
+            current = df.getPublicationsByAuthorId(id)
+            current.columns = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue', 'name',
+                               'publication_year', 'issue', 'volume', 'chapter', 'type', 'idCites']
+
+            # print(current.dtypes)
+            current["issue"] = current["issue"].astype("string")
+            current["volume"] = current["volume"].astype("string")
+            current["issue"] = current["issue"].apply(self.removeDotZero)
+            current["volume"] = current["volume"].apply(self.removeDotZero)
+            current = current.fillna("NA")
+            df_empty = concat([df_empty, current], ignore_index=True)
+            df_final = df_empty
+            df_final = df_final.values.tolist()
+
+            doi_l = []
+            publicationYear_l = []
+            title_l = []
+            publicationVenue_l = []
+            author_l = []
+            cites_l = []
+
+            for i in df_empty['doi_authors']:
+                doi_l.append(i)
+
+            for i in df_empty['publication_year']:
+                publicationYear_l.append(i)
+
+            for i in df_empty['title']:
+                title_l.append(i)
+
+            for i in df_empty['publication_venue']:
+                publicationVenue_l.append(i)
+
+            for i in df_empty['given']:
+                author_l.append(i)
+
+            for i in df_empty['idCites']:
+                cites_l.append(i)
+
+            pub_obj = Publication(doi_l, publicationYear_l, title_l, publicationVenue_l, author_l, cites_l)
+
+        return pub_obj
+
+    def getMostCitedPublication(self):
+        column_names = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue', 'name',
+                        'publication_year', 'issue', 'volume', 'chapter', 'type']
+
+        df_empty = pd.DataFrame(columns=column_names)
+
+        for df in self.queryProcessor:
+            current = df.getMostCitedPublication()
+            current.columns = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue', 'name',
+                               'publication_year', 'issue', 'volume', 'chapter', 'type']
+
+            current["issue"] = current["issue"].astype("string")
+            current["volume"] = current["volume"].astype("string")
+            current["issue"] = current["issue"].apply(self.removeDotZero)
+            current["volume"] = current["volume"].apply(self.removeDotZero)
+        current = current.fillna("NA")
+        df_empty = concat([df_empty, current], ignore_index=True)
+        df_final = df_empty
+        df_final = df_final.values.tolist()
+
+        doi_l = []
+        publicationYear_l = []
+        title_l = []
+        publicationVenue_l = []
+        author_l = []
+        name_l = []
+
+        for i in df_empty['doi_authors']:
+            doi_l.append(i)
+
+        for i in df_empty['publication_year']:
+            publicationYear_l.append(i)
+
+        for i in df_empty['title']:
+            title_l.append(i)
+
+        for i in df_empty['publication_venue']:
+            publicationVenue_l.append(i)
+
+        for i in df_empty['given']:
+            author_l.append(i)
+
+        for i in df_empty['name']:
+            name_l.append(i)
+
+        pub_obj = Publication(doi_l, publicationYear_l, title_l, publicationVenue_l, author_l, name_l)
+
+        return df_final
 
     def getMostCitedVenue(self):
 
-        with connect(self.getDbPath) as con:
-            con.commit()
+        column_names = ["publication_venue", "doi_venues_id", "name", "title"]
 
-        queryRel4 = """SELECT TOP 1 title
-                   FROM venuesIdTable
-                   GROUP BY title
-                   ORDER BY COUNT(title) DESC"""
+        df_empty = pd.DataFrame(columns=column_names)
 
-        r4 = read_sql(queryRel4, con)
+        for df in self.queryProcessor:
+            # print(df)
+            current = df.getMostCitedVenue()
+            #current.columns = ["publication_venue", "doi_venues_id", "name", "title"]
+            df_empty = concat([df_empty, current], ignore_index=True)
 
-        return r4
+        df_final = df_empty.fillna('NA')
 
+        df_final = df_final.values.tolist()
 
-    def getVenuesByPublisherId(self, Id):
+        doi_l = []
+        name_l = []
+        title_l = []
 
-        with connect(self.getDbPath) as con:
-            con.commit()
+        for i in df_empty['doi_venues_id']:
+            doi_l.append(i)
 
-        queryRel5 = """SELECT *
-                   FROM venuesIdTable
-                   WHERE publishersTable.id == ?"""
+        for i in df_empty['name']:
+            name_l.append(i)
 
-        r5 = read_sql(queryRel5, con, params=[Id])
+        for i in df_empty['title']:
+            title_l.append(i)
 
-        return r5
+        pub_obj = Venue(doi_l, title_l, name_l)
 
-    def getPublicationInVenue(self, Id):
+        return pub_obj
 
-        with connect(self.getDbPath) as con:
-            con.commit()
+    def getVenuesByPublisherId(self, id):
+        column_names = ["title", "doi_venues_id", "publication_venue", "name", "id_pub", "publication_year"]
 
-        queryRel6 = """SELECT *
-                   FROM Publications
-                   LEFT JOIN venuesIdTable.id ON Publications.Id == venuesIdTable.id
-                   WHERE venuesIdTable.id == ?"""
+        df_empty = pd.DataFrame(columns=column_names)
 
-        r6 = read_sql(queryRel6, con, params=[Id])
+        for df in self.queryProcessor:
+            current = df.getVenuesByPublisherId(id)
+            current.columns = ["title", "doi_venues_id", "publication_venue", "name", "id_pub", "publication_year"]
+            df_empty = concat([df_empty, current], ignore_index=True)
 
-        return r6
+        df_final = df_empty.fillna("NA")
 
-    def getJournalArticlesInIssue(self, issue, volume, id):
+        df_final = df_final.values.tolist()
 
-        with connect(self.getDbPath) as con:
-            con.commit()
+        doi_l = []
+        title_l = []
+        pub_l = []
 
-        queryRel7 = """SELECT * 
-                   FROM journal_articles
-                   LEFT JOIN venuesIdTable ON journal_articles.id == venuesIdTable.publications.Id 
-                   WHERE issue = ? 
-                   AND volume = ? 
-                   AND venueId = ? """
-        
-        r7 = read_sql(queryRel7, con, params=[issue, volume, id])
+        for i in df_empty['doi_venues_id']:
+            doi_l.append(i)
 
-        return r7
+        for i in df_empty['title']:
+            title_l.append(i)
 
-    def getJournalArticlesInVolume (self, volume, id):
+        for i in df_empty['name']:
+            pub_l.append(i)
 
-        with connect(self.getDbPath) as con:
-            con.commit()
+        pub_obj = Venue(doi_l, title_l, pub_l)
 
-        queryRel8 = """SELECT *
-                   FROM journal_articles
-                   WHERE ? == journal_articles.volume
-                   AND
-                   ? == journal_articles.id"""
+        return pub_obj
 
-        r8 = read_sql(queryRel8, con, params=[volume, id])
+    def getPublicationInVenue(self, id):
+        column_names = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue', 'publication_year',
+                        'issue', 'volume', 'chapter', 'type']
 
-        return r8
-    
-    def getJournalArticlesInJournal (self, Id):
+        df_empty = pd.DataFrame(columns=column_names)
 
-        with connect(self.getDbPath) as con:
-            con.commit()
+        for df in self.queryProcessor:
+            current = df.getPublicationInVenue(id)
+            current.columns = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue',
+                               'publication_year',
+                               'issue', 'volume', 'chapter', 'type']
+            # print(current.dtypes)
+            current["issue"] = current["issue"].astype("string")
+            current["volume"] = current["volume"].astype("string")
+            current["issue"] = current["issue"].apply(self.removeDotZero)
+            current["volume"] = current["volume"].apply(self.removeDotZero)
+            current = current.fillna("NA")
+            df_empty = concat([df_empty, current], ignore_index=True)
+            df_final = df_empty
+            df_final = df_final.values.tolist()
 
+            doi_l = []
+            publicationYear_l = []
+            title_l = []
+            publicationVenue_l = []
+            author_l = []
+            cites_l = []
 
-        queryRel9 = """SELECT *
-                   FROM journal_articles
-                   WHERE ? == journal_articles.id"""
+            for i in df_empty['doi_authors']:
+                doi_l.append(i)
 
-        r9 = read_sql(queryRel9, con, params=[Id])
+            for i in df_empty['publication_year']:
+                publicationYear_l.append(i)
 
-        return r9
+            for i in df_empty['title']:
+                title_l.append(i)
 
-    def getProceedingsByEvent (self, name):
+            for i in df_empty['publication_venue']:
+                publicationVenue_l.append(i)
 
-        with connect(self.getDbPath) as con:
-            con.commit()
+            for i in df_empty['given']:
+                author_l.append(i)
 
-        queryRel10 = """SELECT *
-                   FROM Proceedings
-                   WHERE ? in Event"""
+            for i in df_empty['doi_authors']:
+                cites_l.append(i)
 
-        r10 = read_sql(queryRel10, con, params=[name])
+            pub_obj = Publication(doi_l, publicationYear_l, title_l, publicationVenue_l, author_l, cites_l)
 
-        return r10
+        return pub_obj
 
-    def getPublicationAuthors (self, Id):
+    def getJournalArticlesInIssue(self, issue, volume, journalId):
+        column_names = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue', 'issue', 'volume',
+                        'name',
+                        'publication_year']
 
-        with connect(self.getDbPath) as con:
-            con.commit()
+        df_empty = pd.DataFrame(columns=column_names)
 
-        queryRel11 = """SELECT *
-                        FROM Authors
-                        WHERE ? = Authors.id"""
+        for df in self.queryProcessor:
+            current = df.getJournalArticlesInIssue(issue, volume, journalId)
+            current.columns = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue', 'issue',
+                               'volume', 'name',
+                               'publication_year']
+            # print(current.dtypes)
+            current["issue"] = current["issue"].astype("string")
+            current["volume"] = current["volume"].astype("string")
+            current["issue"] = current["issue"].apply(self.removeDotZero)
+            current["volume"] = current["volume"].apply(self.removeDotZero)
+            current = current.fillna("NA")
+            df_empty = concat([df_empty, current], ignore_index=True)
+            df_final = df_empty
+            df_final = df_final.values.tolist()
 
-        r11 = read_sql (queryRel11, con, params=[Id])
+            doi_l = []
+            publicationYear_l = []
+            title_l = []
+            publicationVenue_l = []
+            author_l = []
+            cites_l = []
+            issue_l = []
+            volume_l = []
 
-        return r11
+            for i in df_empty['doi_authors']:
+                doi_l.append(i)
 
-    def getPublicationsByAuthorName(self, name):
+            for i in df_empty['publication_year']:
+                publicationYear_l.append(i)
 
-        with connect(self.getDbPath) as con:
-            con.commit()
+            for i in df_empty['title']:
+                title_l.append(i)
 
-        queryRel12 = """SELECT *
-                        FROM Publications
-                        WHERE ? = Authors.given"""
+            for i in df_empty['publication_venue']:
+                publicationVenue_l.append(i)
 
-        r12 = read_sql(queryRel12, con, params=[name])
+            for i in df_empty['given']:
+                author_l.append(i)
 
-        return r12
-    
-    def getDistinctPublishersOfPublications(self, Id):
+            for i in df_empty['doi_authors']:
+                cites_l.append(i)
 
-        with connect(self.getDbPath) as con:
-            con.commit()
+            for i in df_empty['issue']:
+                issue_l.append(i)
 
-        queryRel13 = """SELECT DISTINCT *
-                        FROM Publishers
-                        LEFT ON Venues Id.id == Publications.id
-                        WHERE ? == Publications.id"""
+            for i in df_empty['volume']:
+                volume_l.append(i)
 
-        r13 = read_sql(queryRel13, con, params=[Id])
+            pub_obj = JournalArticle(doi_l, publicationYear_l, title_l, publicationVenue_l, author_l, cites_l, issue_l, volume_l)
 
-        return r13
+        return pub_obj
 
+    def getJournalArticlesInVolume(self, volume, journalId):
+        column_names = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue', 'issue',
+                        'volume', 'name', 'publication_year']
 
+        df_empty = pd.DataFrame(columns=column_names)
+
+        for df in self.queryProcessor:
+            current = df.getJournalArticlesInVolume(volume, journalId)
+            current.columns = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue', 'issue',
+                               'volume', 'name', 'publication_year']
+            # print(current.dtypes)
+            current["issue"] = current["issue"].astype("string")
+            current["volume"] = current["volume"].astype("string")
+            current["issue"] = current["issue"].apply(self.removeDotZero)
+            current["volume"] = current["volume"].apply(self.removeDotZero)
+            current = current.fillna("NA")
+            df_empty = concat([df_empty, current], ignore_index=True)
+            df_final = df_empty
+            df_final = df_final.values.tolist()
+
+            doi_l = []
+            publicationYear_l = []
+            title_l = []
+            publicationVenue_l = []
+            author_l = []
+            cites_l = []
+            issue_l = []
+            volume_l = []
+
+            for i in df_empty['doi_authors']:
+                doi_l.append(i)
+
+            for i in df_empty['publication_year']:
+                publicationYear_l.append(i)
+
+            for i in df_empty['title']:
+                title_l.append(i)
+
+            for i in df_empty['publication_venue']:
+                publicationVenue_l.append(i)
+
+            for i in df_empty['given']:
+                author_l.append(i)
+
+            for i in df_empty['doi_authors']:
+                cites_l.append(i)
+
+            for i in df_empty['issue']:
+                issue_l.append(i)
+
+            for i in df_empty['volume']:
+                volume_l.append(i)
+
+            pub_obj = JournalArticle(doi_l, publicationYear_l, title_l, publicationVenue_l, author_l, cites_l, issue_l, volume_l)
+
+        return pub_obj
+
+    def getJournalArticlesInJournal(self, journalId):
+        column_names = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue', 'issue', 'volume',
+                        'name', 'publication_year']
+
+        df_empty = pd.DataFrame(columns=column_names)
+
+        for df in self.queryProcessor:
+            current = df.getJournalArticlesInJournal(journalId)
+            current.columns = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue', 'issue',
+                               'volume',
+                               'name', 'publication_year']
+            # print(current.dtypes)
+            current["issue"] = current["issue"].astype("string")
+            current["volume"] = current["volume"].astype("string")
+            current["issue"] = current["issue"].apply(self.removeDotZero)
+            current["volume"] = current["volume"].apply(self.removeDotZero)
+            current = current.fillna("NA")
+            df_empty = concat([df_empty, current], ignore_index=True)
+            df_final = df_empty
+            df_final = df_final.values.tolist()
+
+            doi_l = []
+            publicationYear_l = []
+            title_l = []
+            publicationVenue_l = []
+            author_l = []
+            cites_l = []
+            issue_l = []
+            volume_l = []
+
+            for i in df_empty['doi_authors']:
+                doi_l.append(i)
+
+            for i in df_empty['publication_year']:
+                publicationYear_l.append(i)
+
+            for i in df_empty['title']:
+                title_l.append(i)
+
+            for i in df_empty['publication_venue']:
+                publicationVenue_l.append(i)
+
+            for i in df_empty['given']:
+                author_l.append(i)
+
+            for i in df_empty['doi_authors']:
+                cites_l.append(i)
+
+            for i in df_empty['issue']:
+                issue_l.append(i)
+
+            for i in df_empty['volume']:
+                volume_l.append(i)
+
+            pub_obj = JournalArticle(doi_l, publicationYear_l, title_l, publicationVenue_l, author_l, cites_l, issue_l, volume_l)
+
+        return pub_obj
+
+    def getProceedingsByEvent(self, name):
+        column_names = ['doi', 'title', 'publication_venue', 'doi_venues_id', 'publisher', 'event']
+
+        df_empty = pd.DataFrame(columns=column_names)
+
+        for df in self.queryProcessor:
+            current = df.getProceedingsByEvent(name)
+            current.columns = ['doi', 'title', 'publication_venue', 'doi_venues_id', 'publisher', 'event']
+            df_empty = concat([df_empty, current], ignore_index=True)
+
+        df_final = df_empty.fillna("NA")
+        df_final = df_final.values.tolist()
+
+        doi_l = []
+        title_l = []
+        publisher_l = []
+        event_l = []
+
+        for i in df_empty['doi']:
+            doi_l.append(i)
+
+        for i in df_empty['title']:
+            title_l.append(i)
+
+        for i in df_empty['publisher']:
+            publisher_l.append(i)
+
+        for i in df_empty['event']:
+            event_l.append(i)
+
+        pub_obj = Proceedings(doi_l, title_l, publisher_l, event_l)
+
+        return pub_obj
+
+    def getPublicationAuthors(self, publicationId):
+
+        column_names = ['orcid', 'given', 'family']
+
+        df_empty = pd.DataFrame(columns=column_names)
+
+        for df in self.queryProcessor:
+            current = df.getPublicationAuthors(publicationId)
+            current.columns = ['orcid', 'given', 'family']
+            df_empty = concat([df_empty, current], ignore_index=True)
+
+        df_final = df_empty.fillna("NA")
+        df_final = df_final.values.tolist()
+
+        orcid_l = []
+        given_l = []
+        family_l = []
+
+        for i in df_empty['orcid']:
+            orcid_l.append(i)
+
+        for i in df_empty['given']:
+            given_l.append(i)
+
+        for i in df_empty['family']:
+            family_l.append(i)
+
+        pub_obj = Person(orcid_l, given_l, family_l)
+
+        return pub_obj
+
+    def getPublicationsByAuthorsName(self, name):
+        column_names = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue',
+                        'name', 'publication_year', 'issue', 'volume', 'chapter', 'type']
+
+        df_empty = pd.DataFrame(columns=column_names)
+
+        for df in self.queryProcessor:
+            current = df.getPublicationsByAuthorsName(name)
+            current.columns = ['orcid', 'given', 'family', 'title', 'doi_authors', 'publication_venue',
+                               'name', 'publication_year', 'issue', 'volume', 'chapter', 'type']
+            # print(current.dtypes)
+            current["issue"] = current["issue"].astype("string")
+            current["volume"] = current["volume"].astype("string")
+            current["issue"] = current["issue"].apply(self.removeDotZero)
+            current["volume"] = current["volume"].apply(self.removeDotZero)
+            current = current.fillna("NA")
+            df_empty = concat([df_empty, current], ignore_index=True)
+            df_final = df_empty
+            df_final = df_final.values.tolist()
+
+            doi_l = []
+            publicationYear_l = []
+            title_l = []
+            publicationVenue_l = []
+            author_l = []
+            cites_l = []
+
+            for i in df_empty['doi_authors']:
+                doi_l.append(i)
+
+            for i in df_empty['publication_year']:
+                publicationYear_l.append(i)
+
+            for i in df_empty['title']:
+                title_l.append(i)
+
+            for i in df_empty['publication_venue']:
+                publicationVenue_l.append(i)
+
+            for i in df_empty['given']:
+                author_l.append(i)
+
+            for i in df_empty['orcid']:
+                cites_l.append(i)
+
+            pub_obj = Publication(doi_l, publicationYear_l, title_l, publicationVenue_l, author_l, cites_l)
+
+        return pub_obj
+
+    def getDistinctPublishersOfPublications(self, pubIdList):
+        column_names = ['doi', 'name']
+
+        df_empty = pd.DataFrame(columns=column_names)
+
+        for df in self.queryProcessor:
+            current = df.getDistinctPublishersOfPublications(pubIdList)
+            current.columns = ['doi', 'name']
+            df_empty = concat([df_empty, current], ignore_index=True)
+
+        df_final = df_empty.fillna("NA")
+        df_final = df_final.values.tolist()
+
+        doi_l = []
+        name_l = []
+
+        for i in df_empty['doi']:
+            doi_l.append(i)
+
+        for i in df_empty['name']:
+            name_l.append(i)
+
+        pub_obj = Organization(doi_l, name_l)
+
+        return pub_obj
